@@ -1,0 +1,764 @@
+[
+  {
+    "incident_id": "INC-2026-TCS-9021",
+    "incident_title": "Fake TCS NextStep Offer with UPI Deposit",
+    "campaign_name": "GhostRecruiter Syndicate",
+    "description": "WhatsApp and email recruitment offer pretending to be TCS campus drive, demanding 3500 INR laptop bond.",
+    "claimed_organization": "Tata Consultancy Services (TCS)",
+    "domains": [
+      "tcs-careers-portal.in",
+      "bit.ly"
+    ],
+    "urls": [
+      "https://bit.ly/tcs-campus-2026",
+      "https://tcs-careers-portal.in/register"
+    ],
+    "emails": [
+      "hr-onboarding@tcs-careers-portal.in",
+      "tcsrecruitmentindia@gmail.com"
+    ],
+    "phones_or_upi": [
+      "+919876543210",
+      "tcs.hrverification@oksbi"
+    ],
+    "github_repos": [
+      "https://github.com/tcs-assessment-portal/coding-round-2026"
+    ],
+    "suspicious_packages": [
+      "cross-env-stealer",
+      "node-fetch-override"
+    ],
+    "student_scam_flags": {
+      "upfront_fee": true,
+      "zero_interview": true,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-INFY-4102",
+    "incident_title": "Infosys Special Entry Security Deposit Scam",
+    "campaign_name": "GhostRecruiter Syndicate",
+    "description": "Direct selection letter under Infosys banner demanding 4000 INR refundable hardware clearance fee.",
+    "claimed_organization": "Infosys Limited",
+    "domains": [
+      "infosys-careers-portal.in",
+      "bit.ly"
+    ],
+    "urls": [
+      "https://bit.ly/infy-campus-drive",
+      "https://infosys-careers-portal.in/deposit"
+    ],
+    "emails": [
+      "onboarding@infosys-careers-portal.in",
+      "tcsrecruitmentindia@gmail.com"
+    ],
+    "phones_or_upi": [
+      "+919876543210",
+      "tcs.hrverification@oksbi"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": true,
+      "zero_interview": true,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2025-WIPRO-1108",
+    "incident_title": "Wipro Elite National Talent Fake Offer",
+    "campaign_name": "GhostRecruiter Syndicate",
+    "description": "Fake Wipro Elite direct appointment letter requesting 3200 INR training module fee via SBI UPI.",
+    "claimed_organization": "Wipro Technologies",
+    "domains": [
+      "wipro-hiring-portal.in"
+    ],
+    "urls": [
+      "https://wipro-hiring-portal.in/join"
+    ],
+    "emails": [
+      "recruitment@wipro-hiring-portal.in"
+    ],
+    "phones_or_upi": [
+      "+919876543210",
+      "wipro.onboarding@oksbi"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": true,
+      "zero_interview": true,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-COGN-3310",
+    "incident_title": "Cognizant GenC Fake Offer Letter",
+    "campaign_name": "GhostRecruiter Syndicate",
+    "description": "WhatsApp dispatch of forged Cognizant GenC onboarding letter requiring 3500 INR courier and ID badge charge.",
+    "claimed_organization": "Cognizant Technology Solutions",
+    "domains": [
+      "cognizant-genc-portal.in",
+      "bit.ly"
+    ],
+    "urls": [
+      "https://bit.ly/cogn-genc-2026"
+    ],
+    "emails": [
+      "hr@cognizant-genc-portal.in"
+    ],
+    "phones_or_upi": [
+      "+919876543210",
+      "tcs.hrverification@oksbi"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": true,
+      "zero_interview": true,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-HCL-5520",
+    "incident_title": "HCL TechBee Fresher Registration Fee",
+    "campaign_name": "GhostRecruiter Syndicate",
+    "description": "Fake campus recruitment portal for HCL asking students to transfer 2800 INR for entry exam hall ticket.",
+    "claimed_organization": "HCL Technologies",
+    "domains": [
+      "hcl-freshers-portal.in"
+    ],
+    "urls": [
+      "https://hcl-freshers-portal.in/hallticket"
+    ],
+    "emails": [
+      "careers@hcl-freshers-portal.in",
+      "tcsrecruitmentindia@gmail.com"
+    ],
+    "phones_or_upi": [
+      "+919876543210",
+      "hcl.verify@oksbi"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": true,
+      "zero_interview": true,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-REPO-0101",
+    "incident_title": "React Internship Test with Obfuscated Postinstall",
+    "campaign_name": "RepoBackdoor APT",
+    "description": "Technical coding challenge repository containing cross-env-stealer package in package.json targeting student tokens.",
+    "claimed_organization": "MetaDev Labs",
+    "domains": [
+      "dev-assessment-check.net"
+    ],
+    "urls": [
+      "https://dev-assessment-check.net/challenge-1"
+    ],
+    "emails": [
+      "devrel-hiring@protonmail.com"
+    ],
+    "phones_or_upi": [],
+    "github_repos": [
+      "https://github.com/tcs-assessment-portal/coding-round-2026"
+    ],
+    "suspicious_packages": [
+      "cross-env-stealer",
+      "node-fetch-override"
+    ],
+    "student_scam_flags": {
+      "upfront_fee": false,
+      "zero_interview": false,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-REPO-0102",
+    "incident_title": "Python FastAPI Assessment with Poisoned Setup.py",
+    "campaign_name": "RepoBackdoor APT",
+    "description": "Take-home backend assessment with malicious setup.py executing base64 encoded payload to harvest browser passwords.",
+    "claimed_organization": "CloudScale Systems",
+    "domains": [
+      "dev-assessment-check.net"
+    ],
+    "urls": [
+      "https://dev-assessment-check.net/python-task"
+    ],
+    "emails": [
+      "devrel-hiring@protonmail.com"
+    ],
+    "phones_or_upi": [],
+    "github_repos": [
+      "https://github.com/capgemini-hire-test/takehome-task"
+    ],
+    "suspicious_packages": [
+      "requests-ratelimit-bypass",
+      "cross-env-stealer"
+    ],
+    "student_scam_flags": {
+      "upfront_fee": false,
+      "zero_interview": false,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-REPO-0103",
+    "incident_title": "Fullstack Coding Round with VSCode Tasks Backdoor",
+    "campaign_name": "RepoBackdoor APT",
+    "description": "GitHub coding assessment with hidden .vscode/tasks.json configured to trigger curl payload upon folder open.",
+    "claimed_organization": "FinTech Dev Challenge",
+    "domains": [
+      "code-eval-verify.io"
+    ],
+    "urls": [
+      "https://code-eval-verify.io/repo-eval"
+    ],
+    "emails": [
+      "devrel-hiring@protonmail.com"
+    ],
+    "phones_or_upi": [],
+    "github_repos": [
+      "https://github.com/fintech-dev-challenge/intern-eval"
+    ],
+    "suspicious_packages": [
+      "node-fetch-override",
+      "discord-token-logger"
+    ],
+    "student_scam_flags": {
+      "upfront_fee": false,
+      "zero_interview": false,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-REPO-0104",
+    "incident_title": "Web3 Smart Contract Assessment Credential Stealer",
+    "campaign_name": "RepoBackdoor APT",
+    "description": "Web3 Solidity internship test repo importing malicious ethers-helper-v2 dependency to siphon crypto wallets.",
+    "claimed_organization": "ChainPulse Foundation",
+    "domains": [
+      "code-eval-verify.io"
+    ],
+    "urls": [
+      "https://code-eval-verify.io/web3-task"
+    ],
+    "emails": [
+      "devrel-hiring@protonmail.com"
+    ],
+    "phones_or_upi": [],
+    "github_repos": [
+      "https://github.com/web3-dev-challenge/smart-contract-task"
+    ],
+    "suspicious_packages": [
+      "ethers-helper-v2",
+      "cross-env-stealer"
+    ],
+    "student_scam_flags": {
+      "upfront_fee": false,
+      "zero_interview": false,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-SCHOLAR-201",
+    "incident_title": "AICTE Pragati Scholarship Verification Fee Fraud",
+    "campaign_name": "BharatGov Scholarship Syndicate",
+    "description": "SMS phishing campaign claiming approved 50,000 INR AICTE Pragati scholarship requiring 1200 INR stamp registration.",
+    "claimed_organization": "AICTE (All India Council for Technical Education)",
+    "domains": [
+      "aicte-scholarship-gov.in"
+    ],
+    "urls": [
+      "https://aicte-scholarship-gov.in/verify"
+    ],
+    "emails": [
+      "support@aicte-scholarship-gov.in"
+    ],
+    "phones_or_upi": [
+      "+919123456780",
+      "aicte.helpdesk@upi"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": true,
+      "zero_interview": false,
+      "ugc_fake_uni": false,
+      "aicte_unverified": true,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-SCHOLAR-202",
+    "incident_title": "NSP Central Sector Scheme Biometric Fee Phish",
+    "campaign_name": "BharatGov Scholarship Syndicate",
+    "description": "Spoofed National Scholarship Portal claiming pending grant disbursement upon payment of 1500 INR processing fee.",
+    "claimed_organization": "National Scholarship Portal (NSP)",
+    "domains": [
+      "nsp-portal-grant.org",
+      "aicte-scholarship-gov.in"
+    ],
+    "urls": [
+      "https://nsp-portal-grant.org/disbursement"
+    ],
+    "emails": [
+      "officer@nsp-portal-grant.org"
+    ],
+    "phones_or_upi": [
+      "+919123456780",
+      "aicte.helpdesk@upi"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": true,
+      "zero_interview": false,
+      "ugc_fake_uni": false,
+      "aicte_unverified": true,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-SCHOLAR-203",
+    "incident_title": "UGC Merit Fellowship Stamp Duty Extortion",
+    "campaign_name": "BharatGov Scholarship Syndicate",
+    "description": "Phony UGC letterhead certifying research fellowship grant provided 2000 INR stamp duty is deposited to official UPI.",
+    "claimed_organization": "UGC (University Grants Commission)",
+    "domains": [
+      "ugc-merit-fellowship.co.in"
+    ],
+    "urls": [
+      "https://ugc-merit-fellowship.co.in/claim"
+    ],
+    "emails": [
+      "ugc.disbursement@gmail.com"
+    ],
+    "phones_or_upi": [
+      "+919123456780",
+      "fellowship.gov@upi"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": true,
+      "zero_interview": false,
+      "ugc_fake_uni": true,
+      "aicte_unverified": false,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-SCHOLAR-204",
+    "incident_title": "State Post-Matric Scholarship Gateway Trap",
+    "campaign_name": "BharatGov Scholarship Syndicate",
+    "description": "Cloned state scholarship portal directing students to pay 1000 INR verification charge via QR code.",
+    "claimed_organization": "State Directorate of Technical Education",
+    "domains": [
+      "scholarship-disbursement.org.in"
+    ],
+    "urls": [
+      "https://scholarship-disbursement.org.in/pay"
+    ],
+    "emails": [
+      "officer@nsp-portal-grant.org"
+    ],
+    "phones_or_upi": [
+      "+919123456780",
+      "aicte.helpdesk@upi"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": true,
+      "zero_interview": false,
+      "ugc_fake_uni": false,
+      "aicte_unverified": true,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-TASK-301",
+    "incident_title": "YouTube Like & Subscribe Daily Salary Scam",
+    "campaign_name": "QuickTask Telegram Guild",
+    "description": "WhatsApp outreach promising 1500 INR daily for liking YouTube videos, requires 3000 INR VIP upgrade deposit.",
+    "claimed_organization": "Apex Media Marketing",
+    "domains": [
+      "t.me",
+      "telegram.org"
+    ],
+    "urls": [
+      "https://t.me/quicktask_india",
+      "https://chat.whatsapp.com/taskrecruit2026"
+    ],
+    "emails": [],
+    "phones_or_upi": [
+      "+919988776655",
+      "dailyrewards@paytm"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": true,
+      "zero_interview": true,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": true,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-TASK-302",
+    "incident_title": "Google Maps 5-Star Rating Student Bounty Scam",
+    "campaign_name": "QuickTask Telegram Guild",
+    "description": "Telegram group paying 50 INR per Google Maps rating, then freezing funds until 5000 INR unlock deposit is sent.",
+    "claimed_organization": "StarRank Media",
+    "domains": [
+      "t.me"
+    ],
+    "urls": [
+      "https://t.me/google_review_bounty"
+    ],
+    "emails": [],
+    "phones_or_upi": [
+      "+919988776655",
+      "dailyrewards@paytm"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": true,
+      "zero_interview": true,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": true,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-TASK-303",
+    "incident_title": "Hotel Booking Review Campus Part-Time Job",
+    "campaign_name": "QuickTask Telegram Guild",
+    "description": "Hostel student group targeted with fake TripAdvisor review tasks, demanding UPI deposit to release accumulated payout.",
+    "claimed_organization": "TravelPromo Global",
+    "domains": [
+      "bit.ly"
+    ],
+    "urls": [
+      "https://bit.ly/tripadvisor-review-job",
+      "https://chat.whatsapp.com/taskrecruit2026"
+    ],
+    "emails": [],
+    "phones_or_upi": [
+      "+919988776655",
+      "instanttask@ybl"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": true,
+      "zero_interview": true,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": true,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-TASK-304",
+    "incident_title": "Crypto Micro-Arbitrage Task Ring for College Students",
+    "campaign_name": "QuickTask Telegram Guild",
+    "description": "Telegram bot offering automated USDT trading tasks, requiring 4500 INR initial collateral transfer.",
+    "claimed_organization": "BitArbitrage Bot",
+    "domains": [
+      "t.me"
+    ],
+    "urls": [
+      "https://t.me/quicktask_india"
+    ],
+    "emails": [],
+    "phones_or_upi": [
+      "+919988776655",
+      "dailyrewards@paytm"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": true,
+      "zero_interview": true,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": true,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-MULE-401",
+    "incident_title": "Campus Payment Partner Money Mule Recruitment",
+    "campaign_name": "EduAffiliate Money Mule Network",
+    "description": "Recruits engineering students to receive third-party bank deposits on UPI and forward them in return for 5% commission.",
+    "claimed_organization": "EduFin Remittance Club",
+    "domains": [
+      "campus-finance-network.in"
+    ],
+    "urls": [
+      "https://campus-finance-network.in/partner"
+    ],
+    "emails": [
+      "campus-partner@edu-fin.club"
+    ],
+    "phones_or_upi": [
+      "+919811223344",
+      "mule.escrow@icici"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": false,
+      "zero_interview": true,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": false,
+      "mule_account_request": true
+    }
+  },
+  {
+    "incident_id": "INC-2026-MULE-402",
+    "incident_title": "Crypto P2P Student Account Rental Scheme",
+    "campaign_name": "EduAffiliate Money Mule Network",
+    "description": "Offers college students 2000 INR daily rent for using their GooglePay/PhonePe handles for crypto peer-to-peer exchanges.",
+    "claimed_organization": "P2P Swift Exchange",
+    "domains": [
+      "campus-finance-network.in"
+    ],
+    "urls": [
+      "https://campus-finance-network.in/rent"
+    ],
+    "emails": [
+      "recruiter@edu-fin.club"
+    ],
+    "phones_or_upi": [
+      "+919811223344",
+      "mule.escrow@icici"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": false,
+      "zero_interview": true,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": false,
+      "mule_account_request": true
+    }
+  },
+  {
+    "incident_id": "INC-2026-MULE-403",
+    "incident_title": "Campus Ambassador Forex Commission Syndicate",
+    "campaign_name": "EduAffiliate Money Mule Network",
+    "description": "Solicits student bank accounts to receive overseas educational loans, diverting stolen cybercrime funds.",
+    "claimed_organization": "Global EduPay Link",
+    "domains": [
+      "campus-finance-network.in"
+    ],
+    "urls": [
+      "https://campus-finance-network.in/apply"
+    ],
+    "emails": [
+      "campus-partner@edu-fin.club"
+    ],
+    "phones_or_upi": [
+      "+919811223344",
+      "fastpayout@icici"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": false,
+      "zero_interview": true,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": false,
+      "mule_account_request": true
+    }
+  },
+  {
+    "incident_id": "INC-2026-SOLO-501",
+    "incident_title": "Chegg Fake Online Subject Tutor Scam",
+    "campaign_name": "Isolated Incident",
+    "description": "Fake recruitment for online computer science tutor asking 999 INR onboarding fee to dispatch answer key tablet.",
+    "claimed_organization": "Chegg India Unofficial",
+    "domains": [
+      "chegg-tutors-onboard.com"
+    ],
+    "urls": [
+      "https://chegg-tutors-onboard.com/register"
+    ],
+    "emails": [
+      "hr@chegg-tutors-onboard.com"
+    ],
+    "phones_or_upi": [
+      "+917711223344",
+      "tutorpay@okhdfcbank"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": true,
+      "zero_interview": true,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-SOLO-502",
+    "incident_title": "Techno Global Unaccredited Fast-Track Degree",
+    "campaign_name": "Isolated Incident",
+    "description": "Offers direct backdated B.Tech degree certificates for 45,000 INR without attending exams; matches UGC fake list.",
+    "claimed_organization": "Techno Global Deemed University",
+    "domains": [
+      "techno-global-univ.edu.in"
+    ],
+    "urls": [
+      "https://techno-global-univ.edu.in/degrees"
+    ],
+    "emails": [
+      "admissions@techno-global-univ.edu.in"
+    ],
+    "phones_or_upi": [
+      "+918800112233"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": true,
+      "zero_interview": true,
+      "ugc_fake_uni": true,
+      "aicte_unverified": true,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-SOLO-503",
+    "incident_title": "HackerEarth Spoofed Campus Contest Phishing",
+    "campaign_name": "Isolated Incident",
+    "description": "Phishing portal imitating HackerEarth campus assessment to harvest GitHub tokens and college portal credentials.",
+    "claimed_organization": "HackerEarth Impersonator",
+    "domains": [
+      "hackerearth-liveassessment.net"
+    ],
+    "urls": [
+      "https://hackerearth-liveassessment.net/contest/campus2026"
+    ],
+    "emails": [
+      "support@hackerearth-liveassessment.net"
+    ],
+    "phones_or_upi": [],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": false,
+      "zero_interview": false,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-SOLO-504",
+    "incident_title": "IndiGo Student Ground Crew Training Deposit",
+    "campaign_name": "Isolated Incident",
+    "description": "Bogus airline airport customer service job offer asking final-year students for 2500 INR medical clearance fee.",
+    "claimed_organization": "IndiGo Airlines Fake HR",
+    "domains": [
+      "indigo-campus-ground.in"
+    ],
+    "urls": [
+      "https://indigo-campus-ground.in/offer"
+    ],
+    "emails": [
+      "careers@indigo-campus-ground.in"
+    ],
+    "phones_or_upi": [
+      "+919001122334",
+      "indigo.interview@axisbank"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": true,
+      "zero_interview": true,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  },
+  {
+    "incident_id": "INC-2026-SOLO-505",
+    "incident_title": "Freelance Form Filling Software License Charge",
+    "campaign_name": "Isolated Incident",
+    "description": "Student work-from-home data entry job demanding 1800 INR upfront software key fee prior to project assignment.",
+    "claimed_organization": "Apex Freelance Portal",
+    "domains": [
+      "freelance-entry-work.org"
+    ],
+    "urls": [
+      "https://freelance-entry-work.org/jobs"
+    ],
+    "emails": [
+      "jobs@freelance-entry-work.org"
+    ],
+    "phones_or_upi": [
+      "dataentry.verify@sbi"
+    ],
+    "github_repos": [],
+    "suspicious_packages": [],
+    "student_scam_flags": {
+      "upfront_fee": true,
+      "zero_interview": true,
+      "ugc_fake_uni": false,
+      "aicte_unverified": false,
+      "task_scam": false,
+      "mule_account_request": false
+    }
+  }
+]
