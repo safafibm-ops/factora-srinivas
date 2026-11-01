@@ -25,6 +25,9 @@ This document tracks implementation status across all 4 team streams. Every memb
 - [x] Created official UGC Fake Universities database & Indian student registry verifier (`scholarships.gov.in`, AICTE).
 - [x] Implemented multi-tier Screenshot OCR & Vision Entity Extractor.
 - [x] Built GitHub repo assessment & dependency malware auditor (`.vscode/tasks.json` folderOpen, npm hooks, typosquats).
+- [x] Built P.R.I.M.E. Neuro-Symbolic fuzzy risk scorer (6-criteria 0–10 matrix, 0–100 index, risk tiers).
+- [x] Generated evidence-backed `why_it_is_risky_summary` & interactive `verify_before_proceeding_checklist`.
+- [x] Connected production endpoints `POST /api/analyzer/analyze` and `GET /api/analyzer/checklist/{id}`.
 - [x] Working mock router endpoint `GET /api/analyzer/mock` active.
 - [x] Heuristic threat analysis endpoint `POST /api/analyzer/analyze` active.
 - [x] Checklist retrieval endpoint `GET /api/analyzer/checklist/{incident_id}` active.

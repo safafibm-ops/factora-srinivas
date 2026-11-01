@@ -470,3 +470,4 @@ def verify_government_scholarship_url(url: str) -> Dict[str, Any]:
             if is_phishing else None
         )
     }
+
