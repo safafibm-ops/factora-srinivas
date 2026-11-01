@@ -45,11 +45,11 @@ This document tracks implementation status across all 4 team streams. Every memb
 - [x] Working mock router endpoint `GET /api/correlator/mock` active.
 - [x] Correlation endpoint `POST /api/correlator/correlate` active.
 - [x] Graph visual export endpoint `GET /api/correlator/graph/{incident_id}` active.
-- [ ] Build in-memory / SQLite vector database for historical incident indicators.
-- [ ] Implement Jaccard / Levenshtein similarity matching for domains, emails, and handles.
-- [ ] UPI ID and phone number clustering logic to identify recurring syndicates.
-- [ ] Dynamic NetworkX / Cytoscape graph node & edge generator with confidence weighting.
-- [ ] Automated generation of campus-wide warning announcements for recurring syndicates.
+- [x] Build in-memory / SQLite vector database for historical incident indicators.
+- [x] Implement Jaccard / Levenshtein similarity matching for domains, emails, and handles.
+- [x] UPI ID and phone number clustering logic to identify recurring syndicates.
+- [x] Dynamic NetworkX / Cytoscape graph node & edge generator with confidence weighting.
+- [x] Automated generation of campus-wide warning announcements for recurring syndicates.
 
 ---
 
