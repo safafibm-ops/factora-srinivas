@@ -1446,12 +1446,14 @@
       const [portals, setPortals] = useState([]);
       const [dark, setDark] = useState(false);
       const [modelStatus, setModelStatus] = useState({ analyzer: false, correlator: false, analyzerError: null, correlatorError: null, checked: false });
+      const [telegramBotUrl, setTelegramBotUrl] = useState(null);
 
       useEffect(() => {
         fetch(`${API_BASE}/analyzer/mock`).then(r => r.json()).then(d => setThreat(d)).catch(() => {});
         fetch(`${API_BASE}/correlator/mock`).then(r => r.json()).then(d => setGraph(d)).catch(() => {});
         fetch(`${API_BASE}/community/mock`).then(r => r.json()).then(d => setComm(d)).catch(() => {});
         fetch(`${API_BASE}/community/external-portals`).then(r => r.json()).then(d => setPortals(d)).catch(() => {});
+        fetch(`${API_BASE}/telegram/info`).then(r => r.ok ? r.json() : null).then(d => setTelegramBotUrl(d?.chat_url || null)).catch(() => {});
         Promise.all([
           fetch(`${API_BASE}/analyzer/health`).then(r => r.ok ? r.json() : null),
           fetch(`${API_BASE}/correlator/health`).then(r => r.ok ? r.json() : null)
@@ -1765,7 +1767,7 @@
                           rows="4"
                           value={text}
                           onChange={e => setText(e.target.value)}
-                          placeholder="Paste offer letter email, WhatsApp message, Telegram task description, or college recruitment notice..."
+                          placeholder="Paste an offer letter, email, Telegram message, or college recruitment notice..."
                           className="w-full p-4 rounded-2xl bg-[#F8F9FC] dark:bg-tactile-darkcanvas border border-black/[0.06] dark:border-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-tactile-obsidian dark:focus:ring-white"
                         ></textarea>
                       )}
@@ -1781,7 +1783,7 @@
                           }} className="hidden" id="ocr-f" />
                           <label htmlFor="ocr-f" className="cursor-pointer flex flex-col items-center">
                             <span className="text-3xl mb-2">📸</span>
-                            <span className="text-sm font-bold text-gray-900 dark:text-white">Upload Offer Letter or WhatsApp Screenshot</span>
+                            <span className="text-sm font-bold text-gray-900 dark:text-white">Upload Offer Letter or Message Screenshot</span>
                             <span className="text-xs text-gray-400 mt-1">Automatic OCR & Vision analysis for stamps, headers, and UPI handles</span>
                           </label>
                           {b64 && (
@@ -1971,10 +1973,15 @@
 
                       <div className="p-5 bg-tactile-canvas dark:bg-tactile-darksurface rounded-2xl border border-black/[0.04] dark:border-white/5">
                         <div className="flex justify-between items-center">
-                          <span className="font-bold text-sm">WhatsApp Safety Bot</span>
-                          <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Planned</span>
+                          <span className="font-bold text-sm">Factora Telegram Bot</span>
+                          <span className={`text-[10px] font-semibold uppercase tracking-wider ${telegramBotUrl ? 'text-emerald-700 dark:text-emerald-400' : 'text-gray-500'}`}>{telegramBotUrl ? 'Available' : 'Setup required'}</span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">A WhatsApp integration is not available yet.</p>
+                        <p className="text-xs text-gray-500 mt-2">Send a suspicious message, screenshot, or text-based PDF and receive a scan summary in Telegram.</p>
+                        {telegramBotUrl ? (
+                          <a href={telegramBotUrl} target="_blank" rel="noreferrer" className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-sky-600 text-white text-xs font-bold shadow-sm hover:opacity-90 transition">Open Factora on Telegram <span aria-hidden="true">↗</span></a>
+                        ) : (
+                          <p className="mt-3 text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">The public chat link appears here after the bot username is configured in the server environment.</p>
+                        )}
                       </div>
 
                       <div className="p-5 bg-tactile-canvas dark:bg-tactile-darksurface rounded-2xl border border-black/[0.04] dark:border-white/5">

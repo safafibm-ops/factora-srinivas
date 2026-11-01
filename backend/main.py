@@ -25,6 +25,7 @@ from fastapi.staticfiles import StaticFiles
 from backend.agent1_analyzer.router import router as analyzer_router, scorer as analyzer_scorer
 from backend.agent2_correlator.router import router as correlator_router, get_engine as get_correlator_engine
 from backend.community_hub.router import router as community_router
+from backend.telegram_bot.router import router as telegram_router, register_webhook_if_configured
 
 app = FastAPI(
     title="Factora — Safety Tech Cyber Defense API",
@@ -47,6 +48,12 @@ app.add_middleware(
 app.include_router(analyzer_router)
 app.include_router(correlator_router)
 app.include_router(community_router)
+app.include_router(telegram_router)
+
+
+@app.on_event("startup")
+async def configure_telegram_webhook():
+    await register_webhook_if_configured()
 
 FRONTEND_DIR = ROOT_DIR / "frontend"
 EXTENSION_DIR = ROOT_DIR / "extension"

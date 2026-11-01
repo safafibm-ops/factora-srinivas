@@ -11,6 +11,7 @@ Factora is a student and developer safety platform for checking suspicious recru
 - **Community Hub:** FastAPI routes backed by SQLite for incident reports, evidence uploads, community indicators, and reporting portal links.
 - **Web UI:** React 18 JSX embedded in `frontend/index.html`, transformed in the browser by Babel Standalone and styled with Tailwind CDN. The FastAPI app serves the same file at `/` and `/ui`.
 - **Browser extension:** Manifest V3 Chrome extension in `extension/`; it calls the Analyzer and Correlator APIs.
+- **Telegram bot:** optional webhook integration in `backend/telegram_bot/router.py`; it sends private-chat text, image OCR, and text-based PDF content through the same Analyzer and Correlator, then replies in Telegram.
 
 Shared request/response contracts live in `shared/schemas.py`. Keep those models stable unless the team agrees to a contract change.
 
@@ -27,6 +28,7 @@ Shared request/response contracts live in `shared/schemas.py`. Keep those models
 - `backend/agent2_correlator/models/correlator_rf_model.joblib` — checked-in Correlator model artifact.
 - `backend/agent2_correlator/data/historical_incidents.json` — Correlator's historical catalog.
 - `backend/community_hub/router.py` and `storage.py` — community API and SQLite operations.
+- `backend/telegram_bot/router.py` — Telegram webhook, attachment handling, scan formatting, and public bot link endpoint.
 - `frontend/index.html` — main user interface and API calls.
 - `extension/manifest.json`, `background.js`, `content.js`, `popup.js` — extension entry points and scan flow.
 - `requirements.txt` — unified backend/runtime dependencies used for deployment.
@@ -68,6 +70,17 @@ Deploy one **Python Web Service** from the repository root; the FastAPI app serv
 After deployment, open `https://<your-service>.onrender.com/`, then check `/api/health` and both per-agent health endpoints. If a model is unavailable, inspect its `ml_model_error` and Render deploy/runtime logs.
 
 Render's free web service sleeps after 15 minutes idle and has an ephemeral filesystem. This means the first request after idling can be slow and uploaded evidence/local SQLite changes are not durable. Render's free service also has limited CPU/RAM; if logs show out-of-memory restarts or slow model inference, use a larger instance. Do not promise the free tier as durable production hosting.
+
+### Optional Telegram bot
+
+Create the bot with Telegram's `@BotFather`, then set these Render environment variables on the same web service (never commit or share the token):
+
+- `TELEGRAM_BOT_TOKEN` — secret token from BotFather.
+- `TELEGRAM_BOT_USERNAME` — public username without `@`; the UI uses it to show the `t.me` link.
+- `TELEGRAM_WEBHOOK_SECRET` — a private random value using only letters, digits, `_`, or `-`.
+- `TELEGRAM_WEBHOOK_URL` — `https://<your-service>.onrender.com/api/telegram/webhook`.
+
+On service startup, Factora registers the HTTPS webhook with Telegram. `/api/telegram/health` reports whether required settings are present. Private chats support text, PNG/JPEG/WebP images, and text-based PDFs up to 20 MB. Image scans rely on the existing OCR runtime; image/PDF files with no readable text receive a request for clearer input instead of a fabricated verdict. PDFs must have selectable text. Bot handling uses the local models and does not send message contents to optional third-party LLM providers.
 
 ## Browser extension and deployed API
 
