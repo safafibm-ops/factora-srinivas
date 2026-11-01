@@ -15,6 +15,7 @@ from typing import List, Dict, Any, Optional, Set
 import hashlib
 import json
 import sqlite3
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from backend.community_hub.storage import (
@@ -43,7 +44,8 @@ def generate_dynamic_community_alerts() -> List[Dict[str, Any]]:
     conn = get_db_connection()
     try:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM victim_reports ORDER BY id DESC")
+        cutoff = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
+        cursor.execute("SELECT * FROM victim_reports WHERE data_source = 'community' AND reported_at >= ? ORDER BY reported_at DESC, id DESC", (cutoff,))
         rows = cursor.fetchall()
 
         if not rows:

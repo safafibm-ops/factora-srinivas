@@ -11,7 +11,9 @@ Factora is a student and developer safety platform for checking suspicious recru
 - **Community Hub:** FastAPI routes backed by SQLite for incident reports, evidence uploads, community indicators, and reporting portal links.
 - **Web UI:** React 18 JSX embedded in `frontend/index.html`, transformed in the browser by Babel Standalone and styled with Tailwind CDN. The FastAPI app serves the same file at `/` and `/ui`.
 - **Browser extension:** Manifest V3 Chrome extension in `extension/`; it calls the Analyzer and Correlator APIs.
+- **Extension popup:** `extension/popup.html` follows the dashboard's ceramic light / obsidian dark palette and tactile cards; it adapts to the browser OS color preference while keeping scan, checklist, report, and rescan behavior.
 - **Telegram bot:** optional webhook integration in `backend/telegram_bot/router.py`; it sends private-chat text, image OCR, and text-based PDF content through the same Analyzer and Correlator, then replies in Telegram.
+- **Live community intelligence:** victim submissions are stored in SQLite, live views default to the last 30 days, and Agent 2 compares recent reports for exact indicator reuse and cautious model similarity leads.
 
 Shared request/response contracts live in `shared/schemas.py`. Keep those models stable unless the team agrees to a contract change.
 
@@ -28,6 +30,7 @@ Shared request/response contracts live in `shared/schemas.py`. Keep those models
 - `backend/agent2_correlator/models/correlator_rf_model.joblib` — checked-in Correlator model artifact.
 - `backend/agent2_correlator/data/historical_incidents.json` — Correlator's historical catalog.
 - `backend/community_hub/router.py` and `storage.py` — community API and SQLite operations.
+- `backend/community_hub/graph_engine.py` — exact-indicator graph and 30-day Agent 2 model correlation graph.
 - `backend/telegram_bot/router.py` — Telegram webhook, attachment handling, scan formatting, and public bot link endpoint.
 - `frontend/index.html` — main user interface and API calls.
 - `extension/manifest.json`, `background.js`, `content.js`, `popup.js` — extension entry points and scan flow.
@@ -71,6 +74,8 @@ After deployment, open `https://<your-service>.onrender.com/`, then check `/api/
 
 Render's free web service sleeps after 15 minutes idle and has an ephemeral filesystem. This means the first request after idling can be slow and uploaded evidence/local SQLite changes are not durable. Render's free service also has limited CPU/RAM; if logs show out-of-memory restarts or slow model inference, use a larger instance. Do not promise the free tier as durable production hosting.
 
+The Community Hub supports `FACTORA_COMMUNITY_DB_PATH` to place its SQLite database on a mounted persistent path; for a Render persistent disk, set this to a path under the disk mount (for example `/var/data/community_defense.db`). Free Render web services cannot attach persistent disks and lose local SQLite changes on restarts, deploys, and spin-downs. Use a paid persistent disk or a properly configured managed database for durable public reports; a free Render Postgres database expires after 30 days.
+
 ### Optional Telegram bot
 
 Create the bot with Telegram's `@BotFather`, then set these Render environment variables on the same web service (never commit or share the token):
@@ -81,6 +86,8 @@ Create the bot with Telegram's `@BotFather`, then set these Render environment v
 - `TELEGRAM_WEBHOOK_URL` — `https://<your-service>.onrender.com/api/telegram/webhook`.
 
 On service startup, Factora registers the HTTPS webhook with Telegram. `/api/telegram/health` reports whether required settings are present. Private chats support text, PNG/JPEG/WebP images, and text-based PDFs up to 20 MB. Image scans rely on the existing OCR runtime; image/PDF files with no readable text receive a request for clearer input instead of a fabricated verdict. PDFs must have selectable text. Bot handling uses the local models and does not send message contents to optional third-party LLM providers.
+
+The live community UI uses `GET /api/community/recent?days=30` and `GET /api/community/graph/model?days=30`. `/api/community/report` persists new student submissions; Agent 2 then compares those reports when the live graph is refreshed. Reports with concrete shared indicators are shown separately from model-only similarity candidates. The current live feed excludes the original seeded demo fixtures; set `FACTORA_SEED_DEMO_DATA=true` only when demo seeding is intentionally wanted on a new empty database.
 
 ## Browser extension and deployed API
 

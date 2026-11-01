@@ -8,6 +8,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const alertsList = document.getElementById("alerts-list");
   const serverStatus = document.getElementById("server-status");
   const rescanBtn = document.getElementById("rescan-btn");
+  const rescanLabel = document.getElementById("rescan-label");
+  const rescanIcon = document.getElementById("rescan-icon");
   const checklist = document.getElementById("checklist");
   let rescanTimeout = null;
 
@@ -15,7 +17,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (rescanTimeout) clearTimeout(rescanTimeout);
     rescanTimeout = null;
     rescanBtn.disabled = false;
-    rescanBtn.textContent = "🔄 Re-Scan Tab";
+    rescanLabel.textContent = "Re-scan this tab";
+    rescanIcon.textContent = "↻";
   }
 
   function normalizePageUrl(value) {
@@ -166,7 +169,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       rescanBtn.disabled = true;
-      rescanBtn.textContent = "Scanning...";
+      rescanLabel.textContent = "Scanning…";
+      rescanIcon.textContent = "◌";
       renderPending("Re-scanning this tab. The popup will update when the analyzer and correlator finish.", true);
       rescanTimeout = setTimeout(() => {
         renderPending("The scan did not finish in time. Check that the Factora backend is running, then try again.");

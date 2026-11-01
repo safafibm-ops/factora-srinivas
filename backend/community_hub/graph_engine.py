@@ -15,9 +15,11 @@ Safety Guarantees:
 from typing import List, Dict, Any, Optional, Set
 import json
 import sqlite3
+import hashlib
+from datetime import datetime, timedelta
 from pathlib import Path
 
-from shared.schemas import GraphNode, GraphEdge
+from shared.schemas import GraphNode, GraphEdge, ThreatIndicators
 from backend.community_hub.storage import (
     get_db_connection,
     extract_row_indicators,
@@ -286,3 +288,154 @@ def build_community_threat_graph(
             }
     finally:
         conn.close()
+
+
+def build_recent_model_correlation_graph(days: int = 30, max_nodes: int = 80) -> Dict[str, Any]:
+    """Compare recent live community reports with Agent 2 and return explainable graph links."""
+    from backend.agent2_correlator.router import get_engine
+
+    days = max(1, min(int(days), 30))
+    max_nodes = max(5, min(int(max_nodes), 120))
+    generated_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cutoff = (datetime.now() - timedelta(days=days)).strftime("%Y-%m-%d %H:%M:%S")
+    report_limit = max(2, min(60, max_nodes // 2))
+    conn = get_db_connection()
+    try:
+        conn.row_factory = sqlite3.Row
+        rows = conn.execute(
+            "SELECT * FROM victim_reports WHERE data_source = 'community' AND reported_at >= ? ORDER BY reported_at DESC, id DESC LIMIT ?",
+            (cutoff, report_limit + 1),
+        ).fetchall()
+    finally:
+        conn.close()
+
+    try:
+        engine = get_engine()
+        if engine.model is None:
+            raise RuntimeError("Agent 2 correlation model is not loaded.")
+    except Exception as exc:
+        return {
+            "status": "degraded", "source": "live_community_reports", "window_days": days,
+            "generated_at": generated_at, "model": {"status": "unavailable", "name": "Agent 2 Correlator", "error": str(exc)},
+            "nodes": [], "edges": [], "correlations": [],
+            "summary": {"reports_in_window": len(rows), "connected_pairs": 0, "message": "The correlation model is unavailable; no relationships were inferred."},
+        }
+
+    truncated_reports = len(rows) > report_limit
+    rows = rows[:report_limit]
+    reports = []
+    for row in rows:
+        data = dict(row)
+        indicators = extract_row_indicators(data)
+        contact_indicators = sorted(set(indicators["emails"]) | set(indicators["phones"]) | set(indicators["upis"]))
+        model_indicators = ThreatIndicators(
+            urls=sorted(indicators["urls"]), domains=sorted(indicators["domains"]),
+            emails=sorted(indicators["emails"]), phones_or_upi=contact_indicators,
+            claimed_organization=data.get("claimed_organization"),
+            github_repos=sorted(indicators["repos"]), suspicious_packages=sorted(indicators["packages"]),
+        )
+        query_text = " ".join((data.get("incident_title") or "", data.get("description") or "", data.get("claimed_organization") or "", data.get("scam_type") or ""))
+        reports.append({"row": data, "indicators": indicators, "model_indicators": model_indicators, "query_text": query_text})
+
+    nodes: Dict[str, Dict[str, str]] = {}
+    edges: List[Dict[str, Any]] = []
+    correlations: List[Dict[str, Any]] = []
+    seen_edges: Set[str] = set()
+    for report in reports:
+        row = report["row"]
+        incident_ref = row["incident_ref"]
+        nodes[incident_ref] = {
+            "id": incident_ref,
+            "label": (row.get("incident_title") or incident_ref)[:48],
+            "node_type": "incident",
+        }
+
+    generic_domains = {"bit.ly", "t.me", "telegram.org", "github.com", "forms.gle", "google.com"}
+    for index, left in enumerate(reports):
+        if len(nodes) >= max_nodes:
+            break
+        for right in reports[index + 1:]:
+            if len(nodes) >= max_nodes or len(edges) >= 160:
+                break
+            a = left["row"]
+            b = right["row"]
+            try:
+                features, _, _ = engine._extract_pair_features(left["query_text"], left["model_indicators"], {
+                    "incident_id": b["incident_ref"], "incident_title": b.get("incident_title", ""),
+                    "description": b.get("description", ""), "claimed_organization": b.get("claimed_organization", ""),
+                    "domains": sorted(right["indicators"]["domains"]),
+                    "emails": sorted(right["indicators"]["emails"]),
+                    "phones_or_upi": sorted(set(right["indicators"]["phones"]) | set(right["indicators"]["upis"])),
+                    "github_repos": sorted(right["indicators"]["repos"]),
+                    "suspicious_packages": sorted(right["indicators"]["packages"]),
+                    "student_scam_flags": {}, "campaign_name": b.get("campaign_name") or "Isolated Incident",
+                })
+                probability = float(engine.model.predict_proba(features)[0][1])
+            except Exception:
+                continue
+
+            shared_domains = (left["indicators"]["domains"] & right["indicators"]["domains"]) - generic_domains
+            shared_contacts = (left["indicators"]["emails"] | left["indicators"]["phones"] | left["indicators"]["upis"]) & (right["indicators"]["emails"] | right["indicators"]["phones"] | right["indicators"]["upis"])
+            shared_repos = left["indicators"]["repos"] & right["indicators"]["repos"]
+            shared_packages = left["indicators"]["packages"] & right["indicators"]["packages"]
+            exact_values = sorted(shared_domains | shared_contacts | shared_repos | shared_packages)
+            semantic_similarity = float(features[0][0])
+            domain_similarity = float(features[0][1])
+
+            if exact_values:
+                match_type = "shared_indicator"
+            elif probability >= 0.78 and (semantic_similarity >= 0.45 or domain_similarity >= 0.72):
+                match_type = "model_similarity_candidate"
+            else:
+                continue
+
+            masked_values = [mask_contact(value) if value in shared_contacts else value for value in exact_values]
+            relationship_confidence = max(probability, 0.75) if match_type == "shared_indicator" else probability
+            correlations.append({
+                "source_incident_id": a["incident_ref"], "matched_incident_id": b["incident_ref"],
+                "relationship_confidence": round(relationship_confidence, 3),
+                "model_probability": round(probability, 3), "match_type": match_type,
+                "shared_indicators": masked_values,
+                "connection_explanation": (
+                    "The reports contain the same indicator(s): " + ", ".join(masked_values)
+                    if match_type == "shared_indicator" else
+                    f"Agent 2 found behavioral similarity (text {semantic_similarity:.0%}; domain resemblance {domain_similarity:.0%}). Treat this as a review lead, not confirmation of the same attacker."
+                ),
+            })
+
+            if match_type == "shared_indicator":
+                for value in exact_values:
+                    digest = hashlib.sha256(value.lower().encode("utf-8")).hexdigest()[:18]
+                    entity_id = f"indicator:{digest}"
+                    if entity_id not in nodes and len(nodes) < max_nodes:
+                        if value in shared_domains:
+                            node_type = "domain"
+                        elif value in shared_repos:
+                            node_type = "github_repo"
+                        else:
+                            node_type = "phone_upi"
+                        nodes[entity_id] = {"id": entity_id, "label": mask_contact(value) if value in shared_contacts else value, "node_type": node_type}
+                    for incident in (a["incident_ref"], b["incident_ref"]):
+                        key = f"{incident}:{entity_id}"
+                        if entity_id in nodes and key not in seen_edges:
+                            seen_edges.add(key)
+                            edges.append({"source": incident, "target": entity_id, "relationship": "shares_indicator", "confidence": round(relationship_confidence, 3)})
+            else:
+                key = f"{a['incident_ref']}:{b['incident_ref']}"
+                if key not in seen_edges:
+                    seen_edges.add(key)
+                    edges.append({"source": a["incident_ref"], "target": b["incident_ref"], "relationship": match_type, "confidence": round(relationship_confidence, 3)})
+
+    return {
+        "status": "success", "source": "live_community_reports", "window_days": days,
+        "generated_at": generated_at,
+        "model": {"status": "loaded", "name": "Agent 2 trained correlation model"},
+        "nodes": list(nodes.values()), "edges": edges, "correlations": correlations,
+        "summary": {
+            "reports_in_window": len(reports), "connected_pairs": len(correlations),
+            "shared_indicator_pairs": sum(1 for match in correlations if match["match_type"] == "shared_indicator"),
+            "similarity_candidates": sum(1 for match in correlations if match["match_type"] == "model_similarity_candidate"),
+            "truncated": truncated_reports or len(nodes) >= max_nodes,
+            "message": "Model similarity links are leads for review; they do not prove common ownership or fraud." if correlations else "No sufficiently strong links were found among live reports in this date window.",
+        },
+    }

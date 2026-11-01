@@ -19,7 +19,9 @@ Member 3 manages Factora's community cyber threat intelligence network and centr
 ### Pillar A: Internal Campus Victim Database (`storage.py`)
 - Persistent SQLite datastore (`community_defense.db`) with `PRAGMA journal_mode=MEMORY` and busy timeouts.
 - Accepts structured reports via `VictimReportSubmission` and issues unique tracking references (e.g. `COMM-REPORT-TCS-2611011929`).
-- Pre-seeded with 14 verified student scam cases across all 6 core categories.
+- Live victim reports are kept separate from demo fixtures. Empty databases are not seeded by default; set `FACTORA_SEED_DEMO_DATA=true` only for an intentional demo database. The live UI excludes demo rows.
+- Recent live feeds and Agent 2 network comparisons default to a rolling 30-day window.
+- Set `FACTORA_COMMUNITY_DB_PATH` to a durable mounted path when deploying with SQLite. Render Free web services have ephemeral filesystems; do not promise that their SQLite reports survive restarts or deploys.
 - Calculates cumulative financial impact: `total_financial_loss_inr` and `total_submitted_incidents`.
 - Anonymizes victim statements to provide social proof: *"Student from Srinivas Inst transferred Rs. 3,500; contact blocked immediately"*.
 - Exposes historical incident records to Agent 2 Correlator (`GET /api/community/reports-all`) for multi-incident syndicate graph construction.

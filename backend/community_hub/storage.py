@@ -22,7 +22,7 @@ from typing import List, Dict, Any, Optional, Tuple
 
 from pathlib import Path
 
-DB_FILE = Path(__file__).resolve().parent / "community_defense.db"
+DB_FILE = Path(os.getenv("FACTORA_COMMUNITY_DB_PATH", str(Path(__file__).resolve().parent / "community_defense.db"))).expanduser()
 
 _DB_INITIALIZED = False
 
@@ -152,6 +152,7 @@ def get_db_connection() -> sqlite3.Connection:
 
     """Connects to SQLite with robust settings for Windows/OneDrive environments."""
 
+    DB_FILE.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(DB_FILE), timeout=10.0, check_same_thread=False)
 
     conn.row_factory = sqlite3.Row
@@ -164,7 +165,7 @@ def get_db_connection() -> sqlite3.Connection:
 
 def init_db():
 
-    """Initializes SQLite database schema and seeds realistic baseline student scam cases if empty."""
+    """Initializes the SQLite schema; demo fixtures are seeded only by explicit opt-in."""
 
     global _DB_INITIALIZED
 
@@ -212,7 +213,8 @@ def init_db():
 
                 is_verified INTEGER NOT NULL DEFAULT 1,
 
-                reported_at TEXT NOT NULL
+                reported_at TEXT NOT NULL,
+                data_source TEXT NOT NULL DEFAULT 'community'
 
             );
 
@@ -278,9 +280,17 @@ def init_db():
 
                 cursor.execute("ALTER TABLE victim_reports ADD COLUMN github_repo_link TEXT DEFAULT NULL")
 
+            if "data_source" not in columns:
+                cursor.execute("ALTER TABLE victim_reports ADD COLUMN data_source TEXT NOT NULL DEFAULT 'community'")
+
+            # The original demo seeder used a fixed pseudonym; keep those fixtures
+            # out of live student report feeds while retaining them for mock workflows.
+            cursor.execute("UPDATE victim_reports SET data_source = 'demo' WHERE user_pseudonym = 'student-sentinel-anon' AND data_source = 'community'")
+
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_victim_user_pseudonym ON victim_reports (user_pseudonym);")
 
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_victim_status ON victim_reports (verification_status);")
+            cursor.execute("CREATE INDEX IF NOT EXISTS idx_victim_live_window ON victim_reports (data_source, reported_at);")
 
             # Check if baseline seeding is needed
 
@@ -288,7 +298,7 @@ def init_db():
 
             row = cursor.fetchone()
 
-            if row["cnt"] == 0:
+            if row["cnt"] == 0 and os.getenv("FACTORA_SEED_DEMO_DATA", "false").strip().lower() == "true":
 
                 seed_baseline_reports(cursor)
 
@@ -781,6 +791,8 @@ def seed_baseline_reports(cursor: sqlite3.Cursor):
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 
     """, seed_data)
+
+    cursor.execute("UPDATE victim_reports SET data_source = 'demo' WHERE incident_ref LIKE 'COMM-REPORT-%'")
 
 def mask_contact(contact: str) -> str:
 
@@ -1412,6 +1424,63 @@ def get_recent_activity(limit: int = 15, category: Optional[str] = None) -> List
 
     finally:
 
+        conn.close()
+
+def get_recent_community_snapshot(days: int = 30, limit: int = 50) -> Dict[str, Any]:
+    """Return real community submissions from a bounded recent window, excluding demo fixtures."""
+    init_db()
+    days = max(1, min(int(days), 30))
+    limit = max(1, min(int(limit), 100))
+    cutoff = datetime.now() - timedelta(days=days)
+    cutoff_text = cutoff.strftime("%Y-%m-%d %H:%M:%S")
+    conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT COUNT(*) AS total,
+                   COALESCE(SUM(amount_demanded_or_lost_inr), 0) AS losses,
+                   SUM(CASE WHEN UPPER(verification_status) IN ('CORROBORATED', 'CONFIRMED') OR is_verified = 1 THEN 1 ELSE 0 END) AS corroborated,
+                   COUNT(DISTINCT CASE WHEN campaign_name IS NOT NULL AND campaign_name != '' AND campaign_name != 'Under Automated Correlation' THEN campaign_name END) AS campaigns
+            FROM victim_reports
+            WHERE data_source = 'community' AND reported_at >= ?
+        """, (cutoff_text,))
+        totals = dict(cursor.fetchone())
+
+        cursor.execute("""
+            SELECT incident_ref, incident_title, claimed_organization, scam_type, category,
+                   campaign_name, verification_status, amount_demanded_or_lost_inr,
+                   scammer_contacts, scammer_links, description, reported_at, is_verified
+            FROM victim_reports
+            WHERE data_source = 'community' AND reported_at >= ?
+            ORDER BY reported_at DESC, id DESC LIMIT ?
+        """, (cutoff_text, limit))
+
+        activity = []
+        for row in cursor.fetchall():
+            item = dict(row)
+            item["scammer_contacts"] = [mask_contact(c) for c in json.loads(item.get("scammer_contacts") or "[]")]
+            item["scammer_links"] = json.loads(item.get("scammer_links") or "[]")
+            category = OFFICIAL_CATEGORIES.get(item.get("category"), {})
+            item["category_name"] = category.get("name", str(item.get("category", "")).replace("_", " ").title())
+            item["category_color"] = category.get("color", "#6B7280")
+            item["risk_level"], item["risk_color"] = compute_incident_risk_level(item)
+            activity.append(item)
+
+        return {
+            "status": "success",
+            "window_days": days,
+            "period_start": cutoff_text,
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "statistics": {
+                "total_submitted_incidents": int(totals.get("total") or 0),
+                "newly_reported_incidents": int(totals.get("total") or 0),
+                "corroborated_reports": int(totals.get("corroborated") or 0),
+                "potential_threat_campaigns": int(totals.get("campaigns") or 0),
+                "total_financial_loss_inr": float(totals.get("losses") or 0),
+            },
+            "recent_activity": activity,
+        }
+    finally:
         conn.close()
 
 def get_trending_threats() -> List[Dict[str, Any]]:

@@ -280,20 +280,8 @@
         let anim;
         let t = 0;
 
-        const nodes = graphData?.nodes || [
-          { id: 'inc:target', label: 'Offer Letter (TCS Lookalike)', node_type: 'incident', x: 270, y: 130 },
-          { id: 'dom:tcs-fake', label: 'tcs-careers-portal.in', node_type: 'domain', x: 130, y: 220 },
-          { id: 'upi:scam', label: 'tcs.hrverification@oksbi', node_type: 'phone_upi', x: 440, y: 210 },
-          { id: 'camp:syndicate', label: 'GhostRecruiter Syndicate #4', node_type: 'campaign', x: 310, y: 290 },
-          { id: 'repo:backdoor', label: 'GitHub: react-candidate-test', node_type: 'github_repo', x: 160, y: 70 }
-        ];
-
-        const edges = graphData?.edges || [
-          { source: 'inc:target', target: 'dom:tcs-fake', rel: 'unauthorized_domain' },
-          { source: 'inc:target', target: 'upi:scam', rel: 'demands_₹3500_deposit' },
-          { source: 'dom:tcs-fake', target: 'camp:syndicate', rel: 'attributed_campaign' },
-          { source: 'inc:target', target: 'repo:backdoor', rel: 'malware_assessment' }
-        ];
+        const nodes = graphData?.nodes || [];
+        const edges = graphData?.edges || [];
 
         function draw() {
           t += 0.016;
@@ -337,8 +325,14 @@
           // 2. Connect Bezier Splines
           const nodeMap = {};
           nodes.forEach((n, i) => {
-            const dynamicY = (n.y || (90 + i * 45)) + Math.sin(t + i) * 3;
-            nodeMap[n.id] = { x: n.x || (100 + i * 110), y: dynamicY, data: n };
+            const angle = (i / Math.max(nodes.length, 1)) * Math.PI * 2 - Math.PI / 2;
+            const radiusX = Math.min(width * 0.39, 280);
+            const radiusY = Math.min(height * 0.35, 125);
+            nodeMap[n.id] = {
+              x: width / 2 + Math.cos(angle) * radiusX,
+              y: height / 2 + Math.sin(angle) * radiusY + Math.sin(t + i) * 2,
+              data: n
+            };
           });
 
           edges.forEach(e => {
@@ -359,7 +353,7 @@
               // Relationship Label
               ctx.font = '10px JetBrains Mono';
               ctx.fillStyle = '#6B7280';
-              ctx.fillText(e.rel, cpX - 25, cpY);
+              ctx.fillText(e.relationship || e.rel || 'related', cpX - 25, cpY);
             }
           });
 
@@ -371,15 +365,15 @@
             // Halo Glow
             ctx.beginPath();
             ctx.arc(pos.x, pos.y, 22, 0, Math.PI * 2);
-            ctx.fillStyle = n.node_type === 'campaign' ? 'rgba(239,68,68,0.25)' : 'rgba(255,87,34,0.2)';
+            ctx.fillStyle = n.node_type === 'incident' ? 'rgba(239,68,68,0.25)' : 'rgba(255,87,34,0.2)';
             ctx.fill();
 
             // Core Disk
             ctx.beginPath();
             ctx.arc(pos.x, pos.y, 14, 0, Math.PI * 2);
-            ctx.fillStyle = n.node_type === 'incident' ? '#18191E'
-              : (n.node_type === 'campaign' ? '#EF4444'
-              : (n.node_type === 'phone_upi' ? '#FF9500' : '#3B82F6'));
+            ctx.fillStyle = n.node_type === 'incident' ? '#EF4444'
+              : (n.node_type === 'phone_upi' ? '#FF9500'
+              : (n.node_type === 'github_repo' ? '#8B5CF6' : '#3B82F6'));
             ctx.fill();
 
             // Specular Rim
@@ -389,7 +383,7 @@
 
             // Text Label
             ctx.font = '11px Plus Jakarta Sans';
-            ctx.fillStyle = '#111827';
+            ctx.fillStyle = '#E5E7EB';
             ctx.textAlign = 'center';
             ctx.fillText(n.label, pos.x, pos.y + 28);
           });
@@ -414,7 +408,7 @@
                 </h3>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Forensic infrastructure map showing connected fake domains, mule accounts, and active syndicates.
+              Live community reports from the last 30 days, correlated by Agent 2. Similarity is a review lead, not proof.
               </p>
             </div>
 
@@ -426,8 +420,20 @@
             )}
           </div>
 
-          <div className="rounded-2xl overflow-hidden border border-black/5 dark:border-white/5 bg-[#0D0F14] flex justify-center shadow-inner">
+          <div className="rounded-2xl overflow-hidden border border-black/5 dark:border-white/5 bg-[#0D0F14] flex justify-center shadow-inner relative">
             <canvas ref={canvasRef} width="720" height="370" className="w-full max-w-[720px] h-auto"></canvas>
+            {(!graphData || graphData.nodes?.length === 0) && (
+              <div className="absolute inset-x-6 top-1/2 -translate-y-1/2 text-center text-xs text-gray-400">
+                {graphData?.summary?.message || 'Loading live community reports and Agent 2 correlations…'}
+              </div>
+            )}
+          </div>
+
+          <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-500 dark:text-gray-400">
+            <span>{graphData?.summary?.reports_in_window ?? 0} live reports · {graphData?.summary?.connected_pairs ?? 0} linked pairs</span>
+            <span className={graphData?.model?.status === 'loaded' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
+              {graphData?.model?.status === 'loaded' ? 'Agent 2 model active' : 'Agent 2 unavailable'}
+            </span>
           </div>
 
           {/* Historical Attribution Strip */}
@@ -577,19 +583,21 @@
         loadData();
       }, []);
 
+      useEffect(() => {
+        if (subTab === 'graph') loadGraph();
+      }, [subTab]);
+
       const loadData = async () => {
         setLoading(true);
         try {
-          const [dRes, aRes, eRes, gRes] = await Promise.all([
-            fetch(`${API_BASE}/community/dashboard`).then(r => r.json()).catch(() => null),
+          const [dRes, aRes, eRes] = await Promise.all([
+            fetch(`${API_BASE}/community/recent?days=30&limit=50`).then(r => r.ok ? r.json() : null).catch(() => null),
             fetch(`${API_BASE}/community/dashboard/alerts`).then(r => r.json()).catch(() => []),
-            fetch(`${API_BASE}/community/education`).then(r => r.json()).catch(() => []),
-            fetch(`${API_BASE}/community/graph?max_nodes=35`).then(r => r.json()).catch(() => null)
+            fetch(`${API_BASE}/community/education`).then(r => r.json()).catch(() => [])
           ]);
           if (dRes) setDashboard(dRes);
           if (aRes) setAlerts(aRes);
           if (eRes) setEducation(eRes);
-          if (gRes) setGraphData(gRes);
         } catch (err) {
           console.error('Failed to load community hub data', err);
         } finally {
@@ -597,9 +605,29 @@
         }
       };
 
+      const loadGraph = async () => {
+        setGraphData(null);
+        try {
+          const response = await fetch(`${API_BASE}/community/graph/model?days=30&max_nodes=60`);
+          if (response.ok) setGraphData(await response.json());
+          else setGraphData({ status: 'error', nodes: [], edges: [], correlations: [], summary: { message: 'Agent 2 correlation data is unavailable right now.' } });
+        } catch (err) {
+          setGraphData({ status: 'error', nodes: [], edges: [], correlations: [], summary: { message: 'Could not load the live correlation graph.' } });
+        }
+      };
+
+      useEffect(() => {
+        const refresh = () => {
+          loadData();
+          if (subTab === 'graph') loadGraph();
+        };
+        const timer = window.setInterval(refresh, 60_000);
+        return () => window.clearInterval(timer);
+      }, [subTab]);
+
       const handleInspectIncident = async (ref) => {
         try {
-          const res = await fetch(`${API_BASE}/community/incidents/${ref}`);
+          const res = await fetch(`${API_BASE}/community/dashboard/incident/${encodeURIComponent(ref)}`);
           if (res.ok) {
             const inc = await res.json();
             setSelectedIncident(inc);
@@ -637,6 +665,7 @@
             setReportSuccess(result);
             setMyReports(prev => [result, ...prev]);
             loadData();
+            if (subTab === 'graph') loadGraph();
           } else {
             alert(result.detail || 'Failed to submit report');
           }
@@ -675,10 +704,10 @@
       ];
 
       const stats = dashboard?.statistics || {
-        total_submitted_incidents: 31,
-        total_financial_loss_inr: 147700,
-        potential_threat_campaigns: 8,
-        active_community_alerts: 5
+        total_submitted_incidents: 0,
+        total_financial_loss_inr: 0,
+        potential_threat_campaigns: 0,
+        active_community_alerts: 0
       };
 
       return (
@@ -738,15 +767,15 @@
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               </div>
               <div className="text-3xl font-extrabold font-mono mt-2 text-gray-900 dark:text-white">
-                {stats.total_submitted_incidents || 31}
+                {stats.total_submitted_incidents ?? 0}
               </div>
-              <span className="text-[11px] text-gray-400 font-medium">Campus peer submissions</span>
+              <span className="text-[11px] text-gray-400 font-medium">Reports · past 30 days</span>
             </div>
 
             <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl shadow-tactile-card border border-white/60 dark:border-white/5">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Student Rupee Loss</span>
               <div className="text-3xl font-extrabold font-mono mt-2 text-red-600 dark:text-red-400">
-                ₹{(stats.total_financial_loss_inr || 147700).toLocaleString('en-IN')}
+                ₹{(stats.total_financial_loss_inr ?? 0).toLocaleString('en-IN')}
               </div>
               <span className="text-[11px] text-red-500/80 font-medium">Extorted via UPI/Deposits</span>
             </div>
@@ -754,7 +783,7 @@
             <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl shadow-tactile-card border border-white/60 dark:border-white/5">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Threat Campaigns</span>
               <div className="text-3xl font-extrabold font-mono mt-2 text-amber-500">
-                {stats.potential_threat_campaigns || 8} Rings
+                {stats.potential_threat_campaigns ?? 0} Rings
               </div>
               <span className="text-[11px] text-gray-400 font-medium">Syndicates under watch</span>
             </div>
@@ -762,7 +791,7 @@
             <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl shadow-tactile-card border border-white/60 dark:border-white/5">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Active Advisories</span>
               <div className="text-3xl font-extrabold font-mono mt-2 text-tactile-ember">
-                {alerts.length || stats.active_community_alerts || 5} Alerts
+                {alerts.length ?? stats.active_community_alerts ?? 0} Alerts
               </div>
               <span className="text-[11px] text-gray-400 font-medium">Campus-wide warnings</span>
             </div>
@@ -839,8 +868,8 @@
               {/* Incidents Feed */}
               <div className="space-y-3">
                 <div className="flex justify-between items-center text-xs text-gray-400 font-bold px-1">
-                  <span>Showing {incidents.length} Verified & Corroborated Incidents</span>
-                  <span className="font-mono text-[10px]">SQLite Telemetry Synchronized</span>
+                  <span>Showing {incidents.length} community reports from the last 30 days</span>
+                  <span className="font-mono text-[10px]">Live SQLite · refreshed {dashboard?.generated_at || 'on reload'}</span>
                 </div>
 
                 {incidents.length === 0 ? (
@@ -924,10 +953,10 @@
                     <Icons.TopoGraph />
                     <span>Threat Entity Relationship Network</span>
                   </h3>
-                  <p className="text-xs text-gray-500">Mathematically mapped connections across verified reports, spoofed domains, and UPI accounts.</p>
+                  <p className="text-xs text-gray-500">Agent 2 compares reports from the last 30 days. Similarity candidates are leads for review, not proof of a shared attacker.</p>
                 </div>
                 <button
-                  onClick={loadData}
+                  onClick={loadGraph}
                   className="px-3 py-1.5 rounded-xl border border-black/[0.08] dark:border-white/10 text-xs font-bold hover:bg-black/5"
                 >
                   Reload Topology
@@ -970,7 +999,7 @@
                               const s = positions[e.source];
                               const t = positions[e.target];
                               if (!s || !t) return null;
-                              const isHigh = e.confidence >= 0.95;
+                              const isHigh = e.relationship === 'shares_indicator';
                               return (
                                 <line
                                   key={idx}
@@ -1031,9 +1060,35 @@
                     })()}
                   </svg>
                 ) : (
-                  <div className="text-gray-400 text-xs">Computing Graph Relationships...</div>
+                  <div className="text-center px-8 text-gray-400 text-xs">{graphData?.summary?.message || (loading ? 'Loading live reports and running Agent 2…' : 'No sufficiently strong links found among community reports from the last 30 days.')}</div>
                 )}
               </div>
+
+              <div className="flex flex-wrap gap-3 text-[11px] text-gray-500 dark:text-gray-400">
+                <span>{graphData?.summary?.reports_in_window ?? 0} reports in window</span>
+                <span>{graphData?.summary?.shared_indicator_pairs ?? 0} shared indicator links</span>
+                <span>{graphData?.summary?.similarity_candidates ?? 0} model similarity leads</span>
+                <span className={graphData?.model?.status === 'loaded' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
+                  {graphData?.model?.status === 'loaded' ? 'Agent 2 model active' : 'Agent 2 unavailable'}
+                </span>
+              </div>
+
+              {graphData?.correlations?.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300">Why these reports were linked</h4>
+                  {graphData.correlations.slice(0, 8).map(match => (
+                    <div key={`${match.source_incident_id}-${match.matched_incident_id}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl border border-black/[0.06] dark:border-white/10 p-3 text-xs">
+                      <div className="min-w-0">
+                        <div className="font-mono text-gray-800 dark:text-gray-200 truncate">{match.source_incident_id} ↔ {match.matched_incident_id}</div>
+                        <p className="text-gray-500 mt-1">{match.connection_explanation}</p>
+                      </div>
+                      <span className={`shrink-0 font-mono ${match.match_type === 'shared_indicator' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                        {match.match_type === 'shared_indicator' ? 'SHARED INDICATOR' : 'SIMILARITY LEAD'} · {(match.relationship_confidence * 100).toFixed(0)}%
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1450,7 +1505,6 @@
 
       useEffect(() => {
         fetch(`${API_BASE}/analyzer/mock`).then(r => r.json()).then(d => setThreat(d)).catch(() => {});
-        fetch(`${API_BASE}/correlator/mock`).then(r => r.json()).then(d => setGraph(d)).catch(() => {});
         fetch(`${API_BASE}/community/mock`).then(r => r.json()).then(d => setComm(d)).catch(() => {});
         fetch(`${API_BASE}/community/external-portals`).then(r => r.json()).then(d => setPortals(d)).catch(() => {});
         fetch(`${API_BASE}/telegram/info`).then(r => r.ok ? r.json() : null).then(d => setTelegramBotUrl(d?.chat_url || null)).catch(() => {});
@@ -1465,6 +1519,15 @@
           checked: true
         })).catch(() => setModelStatus({ analyzer: false, correlator: false, analyzerError: 'Health check failed', correlatorError: 'Health check failed', checked: true }));
       }, []);
+
+      useEffect(() => {
+        if (view !== 'network') return;
+        const refreshLiveTerrain = () => fetch(`${API_BASE}/community/graph/model?days=30&max_nodes=36`)
+          .then(r => r.ok ? r.json() : null).then(d => setGraph(d)).catch(() => setGraph(null));
+        refreshLiveTerrain();
+        const timer = window.setInterval(refreshLiveTerrain, 60_000);
+        return () => window.clearInterval(timer);
+      }, [view]);
 
       const handleAnalyze = async () => {
         setLoading(true);

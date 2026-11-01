@@ -143,6 +143,7 @@ from backend.community_hub.storage import (
 
 
     get_recent_activity,
+    get_recent_community_snapshot,
 
 
 
@@ -2205,6 +2206,25 @@ def get_global_threat_graph_endpoint(max_nodes: int = Query(60)):
     """
     from backend.community_hub.graph_engine import build_community_threat_graph
     return build_community_threat_graph(incident_ref="all", max_nodes=max_nodes)
+
+
+@router.get("/recent", summary="Get Live Community Reports from the Last 30 Days")
+def get_recent_community_endpoint(
+    days: int = Query(30, ge=1, le=30),
+    limit: int = Query(50, ge=1, le=100),
+):
+    """Return recent real submissions and window-scoped totals, excluding marked demo fixtures."""
+    return get_recent_community_snapshot(days=days, limit=limit)
+
+
+@router.get("/graph/model", summary="Correlate Recent Community Reports with Agent 2")
+def get_recent_model_graph_endpoint(
+    days: int = Query(30, ge=1, le=30),
+    max_nodes: int = Query(80, ge=5, le=120),
+):
+    """Use the trained Agent 2 model to compare live reports submitted within the selected window."""
+    from backend.community_hub.graph_engine import build_recent_model_correlation_graph
+    return build_recent_model_correlation_graph(days=days, max_nodes=max_nodes)
 
 
 @router.get("/graph/{incident_ref}", summary="Get Incident Targeted Threat Neighborhood Graph")
