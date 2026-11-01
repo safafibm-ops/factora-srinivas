@@ -24,6 +24,7 @@ This document tracks implementation status across all 4 team streams. Every memb
 - [x] Implemented Brand-to-Domain mismatch & Google Forms/Tally abuse detector.
 - [x] Created official UGC Fake Universities database & Indian student registry verifier (`scholarships.gov.in`, AICTE).
 - [x] Implemented multi-tier Screenshot OCR & Vision Entity Extractor.
+- [x] Built GitHub repo assessment & dependency malware auditor (`.vscode/tasks.json` folderOpen, npm hooks, typosquats).
 - [x] Working mock router endpoint `GET /api/analyzer/mock` active.
 - [x] Heuristic threat analysis endpoint `POST /api/analyzer/analyze` active.
 - [x] Checklist retrieval endpoint `GET /api/analyzer/checklist/{incident_id}` active.
