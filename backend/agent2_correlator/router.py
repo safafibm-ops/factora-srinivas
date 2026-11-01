@@ -51,14 +51,26 @@ def get_explainer() -> LLMExplainerAgent:
 @router.get("/health", summary="Agent 2 Health & AI Model Status")
 def health_check():
     """Returns AI model readiness and total indexed threat incidents."""
-    engine = get_engine()
-    return {
-        "status": "ok",
-        "agent": "Agent 2: Cyber Threat Correlator",
-        "ml_model_loaded": engine.model is not None,
-        "indexed_historical_incidents": len(engine.historical_incidents),
-        "feature_count": len(engine.feature_names)
-    }
+    try:
+        engine = get_engine()
+        model_loaded = engine.model is not None
+        return {
+            "status": "ok" if model_loaded else "degraded",
+            "agent": "Agent 2: Cyber Threat Correlator",
+            "ml_model_loaded": model_loaded,
+            "ml_model_error": None if model_loaded else "The correlation model did not load.",
+            "indexed_historical_incidents": len(engine.historical_incidents),
+            "feature_count": len(engine.feature_names)
+        }
+    except Exception as exc:
+        return {
+            "status": "degraded",
+            "agent": "Agent 2: Cyber Threat Correlator",
+            "ml_model_loaded": False,
+            "ml_model_error": str(exc),
+            "indexed_historical_incidents": 0,
+            "feature_count": 0
+        }
 
 
 @router.get("/mock", response_model=ThreatRelationshipRecord, summary="Get Mock Threat Relationship Record")
@@ -91,19 +103,12 @@ def correlate_incident(payload: IncidentCorrelateRequest):
         indicators=indicators
     )
 
-    # 2. Member 3 Community Intelligence Integration
-    community_data = None
-    try:
-        mock_data = get_mock_data()
-        community_data = mock_data.get("community_hub")
-    except Exception:
-        community_data = None
-
-    # 3. LLM Explainability & Campus Early Warning Synthesis
+    # 2. Explain only evidence available in this correlation request. The mock
+    # endpoint remains available for UI previews; don't attach mock victim data
+    # to a live incident.
     enriched_record = explainer.explain_and_enrich(
         base_record=base_record,
-        indicators=indicators,
-        community_data=community_data
+        indicators=indicators
     )
 
     # Cache for graph canvas visualization
@@ -129,8 +134,7 @@ def get_incident_graph(incident_id: str) -> Dict[str, Any]:
         )
         record = explainer.explain_and_enrich(
             base_record=base_record,
-            indicators=mock_data["indicators"],
-            community_data=mock_data.get("community_hub")
+            indicators=mock_data["indicators"]
         )
         _correlation_cache[incident_id] = record
 

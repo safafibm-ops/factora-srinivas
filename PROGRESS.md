@@ -3,6 +3,19 @@
 
 This document tracks implementation status across all 4 team streams. Every member updates their respective checklist upon completing tasks.
 
+## Latest Reliability Fixes
+- [x] Fixed extension re-scan to message the active tab's content script, inject it when absent, keep the popup open for results, and show timeout/access errors.
+- [x] Connected the browser extension's page text and current GitHub repository to Agent 1 before sending Agent 1's extracted indicators to Agent 2.
+- [x] Made the extension and popup display Agent 1's risk tier/evidence and avoid showing a safe verdict when a scan has not completed.
+- [x] Detects payment requests such as "send Rs 5,000" even without the word "fee".
+- [x] Added repository purpose checks for malware-sample collections and made the result a research-material caution, not a claim that the owner is malicious.
+- [x] Removed upfront-fee false positives when message explicitly says the employer does not request fees or deposits.
+- [x] Changed inaccessible GitHub audits to report **Caution / unverified**, without claiming the repository is safe or confirmed malicious.
+- [x] Required concrete shared indicators before Agent 2 reports a historical incident match; campaign warnings now describe potential associations.
+- [x] Display live analyzer and correlator model-load status in the dashboard instead of hard-coded readiness labels.
+- [x] Corrected the TCS demo URL so its short-link/domain signal is actually analyzed.
+- [x] Prevent explicit no-fee policy statements from being scored as fee demands; fee rules now require affirmative payment evidence.
+
 ---
 
 ## 🏗️ Stream 0: Architecture & Contracts (Lead Architect)

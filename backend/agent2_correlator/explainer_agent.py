@@ -61,16 +61,6 @@ class LLMExplainerAgent:
         Takes raw ML correlation outputs, enriches match explanations,
         and generates student-first community warnings.
         """
-        # If no community data provided, pull mock/connected community data from Member 3
-        if community_data is None:
-            try:
-                from backend.community_hub.router import get_mock_community_response
-                # If imported, use mock community intelligence
-                mock_all = get_mock_data()
-                community_data = mock_all["community_hub"]
-            except Exception:
-                community_data = None
-
         # 1. Attempt LLM Generation if API key is active
         if self.gemini_api_key:
             try:
@@ -228,20 +218,23 @@ Output a strictly valid JSON object with:
 
             if matching_upis:
                 clean_upi = matching_upis[0].replace("upi:", "").replace("phone:", "")
-                reasons.append(f"Identical financial receiver ({clean_upi}) identified across multiple fake offer letters")
+                reasons.append(f"The exact contact or payment handle '{clean_upi}' also appears in a historical report")
             if matching_repos:
-                reasons.append("Duplicate GitHub evaluation repository containing automated credential harvesting hooks")
+                repo = matching_repos[0].replace("repo:", "")
+                reasons.append(f"The exact repository '{repo}' also appears in a historical report; this match does not establish that its contents are malicious")
             if matching_pkgs:
                 pkgs_str = ", ".join(p.replace("pkg:", "") for p in matching_pkgs)
-                reasons.append(f"Shares malicious dependency payload ({pkgs_str}) designed to steal student session tokens")
+                reasons.append(f"The package name(s) {pkgs_str} also appear in a historical report; inspect package contents before drawing a malware conclusion")
             if matching_doms:
                 dom_str = matching_doms[0].replace("domain:", "")
-                reasons.append(f"Shares cloned recruitment infrastructure resolving to '{dom_str}'")
+                reasons.append(f"The domain '{dom_str}' also appears in a historical report")
 
             if reasons:
-                explanation = f"{'; '.join(reasons)} -- attributed to {syndicate} ({int(match.relationship_confidence * 100)}% AI confidence)."
+                explanation = f"{'; '.join(reasons)}. This overlap is a lead to verify; it does not by itself prove the same operator or campaign."
             else:
-                explanation = f"Exhibits strong behavioral and linguistic similarity to {syndicate} targeting student applicants."
+                # A match should always carry a concrete shared indicator. If a
+                # future caller violates that invariant, avoid inventing one.
+                explanation = "The correlation model found a candidate link, but no exact shared indicator is available to explain it. Treat this as unconfirmed."
 
             match_dict = match.model_dump()
             match_dict["connection_explanation"] = explanation
@@ -251,24 +244,23 @@ Output a strictly valid JSON object with:
         warnings = []
         if base_record.is_recurring_campaign:
             warnings.append(
-                f"[CAMPUS-WIDE ALERT] Incident confirmed as part of the '{syndicate}' syndicate targeting university students."
+                f"[Potential association] Multiple records share indicators associated with '{syndicate}'. Review each shared indicator before treating them as the same campaign."
             )
 
         if community_data and community_data.internal_victim_reports_count > 0:
             warnings.append(
-                f"[Community DB Corroboration] {community_data.internal_victim_reports_count} student victims reported "
-                f"losing a cumulative Rs {community_data.total_reported_money_lost_inr:,.0f} to this specific syndicate."
+                f"[Community context] The community database contains {community_data.internal_victim_reports_count} reports and Rs {community_data.total_reported_money_lost_inr:,.0f} in reported losses overall; these totals do not establish a link to this incident."
             )
 
         if indicators.phones_or_upi:
             upis = ", ".join(indicators.phones_or_upi)
             warnings.append(
-                f"[Fraudulent Payment Receiver] Do NOT transfer funds to {upis}. Immediately blacklist at campus gate and notify bank fraud cells."
+                f"[Shared contact indicator] This incident includes {upis}. Verify the contact with official sources; its presence alone does not confirm who controls it."
             )
 
         if indicators.github_repos or indicators.suspicious_packages:
             warnings.append(
-                "[Code Security Advisory] The coding assessment repository contains malicious build hooks. Do not open with Workspace Trust enabled or run 'npm/pip install'."
+                "[Code security advisory] A GitHub repository or package was referenced. Review its source and build hooks before opening it or running npm/pip install; this correlation result does not confirm malware."
             )
 
         # External portal escalation links

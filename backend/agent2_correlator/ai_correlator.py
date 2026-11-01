@@ -184,7 +184,15 @@ class ThreatCorrelationEngine:
         """
         if query_text is None:
             # Build representative text from indicators
-            query_text = f"{indicators.claimed_organization or ''} {' '.join(indicators.urls)} {' '.join(indicators.suspicious_packages)}"
+            query_text = " ".join([
+                indicators.claimed_organization or "",
+                *indicators.urls,
+                *indicators.domains,
+                *indicators.emails,
+                *indicators.phones_or_upi,
+                *indicators.github_repos,
+                *indicators.suspicious_packages,
+            ])
 
         matches: List[RelatedIncidentMatch] = []
         graph = nx.Graph()
@@ -206,19 +214,29 @@ class ThreatCorrelationEngine:
             # Predict correlation probability using trained Random Forest
             prob = float(self.model.predict_proba(feats)[0][1])
 
-            if prob >= confidence_threshold:
+            # A model score based only on broad text resemblance is not enough
+            # to say two incidents are connected. Require a concrete shared
+            # contact, repository, package, or a strong model result.
+            strong_exact_match = any(
+                indicator.startswith(("repo:", "pkg:"))
+                or ("@" in indicator)
+                or indicator.startswith("+")
+                for indicator in shared_indics
+            )
+            if strong_exact_match or (prob >= confidence_threshold and shared_indics):
+                relationship_confidence = max(prob, 0.75) if strong_exact_match else prob
                 match = RelatedIncidentMatch(
                     matched_incident_id=hist["incident_id"],
                     shared_indicators=shared_indics,
                     connection_explanation=explanation,
-                    relationship_confidence=round(prob, 3)
+                    relationship_confidence=round(relationship_confidence, 3)
                 )
                 matches.append(match)
 
                 # Weight campaigns by predicted confidence
                 camp = hist.get("campaign_name", "Unknown Syndicate")
                 if camp != "Isolated Incident":
-                    campaign_counter[camp] = campaign_counter.get(camp, 0.0) + prob
+                    campaign_counter[camp] = campaign_counter.get(camp, 0.0) + relationship_confidence
 
                 # Graph node for matched past incident
                 graph.add_node(
@@ -230,7 +248,7 @@ class ThreatCorrelationEngine:
                     query_node_id,
                     hist["incident_id"],
                     relationship="correlated_with",
-                    confidence=round(prob, 3)
+                    confidence=round(relationship_confidence, 3)
                 )
 
         # Sort matches by relationship confidence descending
@@ -239,8 +257,16 @@ class ThreatCorrelationEngine:
         # 2. Determine Primary Campaign & Recurring Status
         detected_campaign = None
         is_recurring = False
-        if campaign_counter:
-            detected_campaign = max(campaign_counter.items(), key=lambda x: x[1])[0]
+        recurring_campaigns = {
+            campaign: total for campaign, total in campaign_counter.items()
+            if sum(1 for match in matches if any(
+                incident.get("incident_id") == match.matched_incident_id
+                and incident.get("campaign_name", "Isolated Incident") == campaign
+                for incident in self.historical_incidents
+            )) >= 2
+        }
+        if recurring_campaigns:
+            detected_campaign = max(recurring_campaigns.items(), key=lambda x: x[1])[0]
             is_recurring = True
             
             # Add campaign cluster node

@@ -26,6 +26,7 @@ try:
 except (ImportError, Exception):
     FactoraThreatDetector = None
 from backend.agent1_analyzer.osint_scanners import (
+    _TLD_EXTRACTOR,
     unroll_redirect_chain,
     get_domain_whois_age,
     check_wayback_history,
@@ -43,11 +44,15 @@ class PrimeNeuroSymbolicScorer:
     """Combines statistical ML predictions with deterministic symbolic cyber rules."""
 
     def __init__(self):
+        self.ml_model_error = None
         try:
             self.ml_detector = FactoraThreatDetector.load_default() if FactoraThreatDetector is not None else None
+            if self.ml_detector is None:
+                self.ml_model_error = "Model implementation unavailable; install the runtime dependencies from requirements.txt."
         except Exception as e:
             print(f"[Warning] Could not load ML model ({e}). Fallback heuristic will be used.")
             self.ml_detector = None
+            self.ml_model_error = str(e)
         self.github_scanner = GitHubAssessmentScanner()
 
     def analyze_payload(self, req: IncidentAnalyzeRequest) -> ThreatIntelligenceRecord:
@@ -84,20 +89,31 @@ class PrimeNeuroSymbolicScorer:
         # Also search text for URLs
         import re
         urls_found.extend(re.findall(r"https?://[^\s<>\"']+", text))
-        urls_found = list(set(urls_found))
+        urls_found = list(dict.fromkeys(url.rstrip(".,);]}") for url in urls_found))
+
+        # UPI handles contain '@' and often a dot, so the generic URL regex can
+        # otherwise mistake them for a host and send them to network scanners.
+        urls_found = [candidate for candidate in urls_found if not re.fullmatch(
+            r"[\w.\-]+@(?:okhdfcbank|oksbi|okaxis|ybl|paytm|upi|ibl|axl)",
+            candidate,
+            re.IGNORECASE,
+        )]
 
         # Unroll primary URL if present
-        target_eval_url = url or (urls_found[0] if urls_found else None)
+        target_eval_url = url or next(
+            (candidate for candidate in urls_found if candidate.startswith(("http://", "https://"))), None
+        )
         redirect_info = unroll_redirect_chain(target_eval_url) if target_eval_url else None
-        final_url = redirect_info["final_url"] if redirect_info else target_eval_url
+        final_url = redirect_info.get("clean_final_url") or redirect_info["final_url"] if redirect_info else target_eval_url
 
         # Domains
-        import tldextract
         domains_found = []
         if final_url:
-            ext = tldextract.extract(final_url)
+            ext = _TLD_EXTRACTOR(final_url)
             if ext.domain:
                 domains_found.append(f"{ext.domain}.{ext.suffix}" if ext.suffix else ext.domain)
+        if redirect_info and redirect_info.get("registered_domain"):
+            domains_found = [redirect_info["registered_domain"]]
 
         # WHOIS Age
         domain_age = None
@@ -116,6 +132,7 @@ class PrimeNeuroSymbolicScorer:
         upi_matches = re.findall(r"[\w\.\-]+@(?:okhdfcbank|oksbi|okaxis|ybl|paytm|upi|ibl|axl)", text, re.IGNORECASE)
         phones = re.findall(r"(?:\+91[\-\s]?)?[6789]\d{9}\b", text)
         phones_or_upi.extend(upi_matches)
+        emails = [email for email in emails if email.lower() not in {upi.lower() for upi in upi_matches}]
         phones_or_upi.extend(phones)
         if ocr_result:
             phones_or_upi.extend(ocr_result["detected_entities"]["upi_handles"])
@@ -133,7 +150,8 @@ class PrimeNeuroSymbolicScorer:
 
         mismatch_info = {"is_domain_mismatch": False}
         if claimed_org and (domains_found or emails):
-            sender_check = domains_found[0] if domains_found else emails[0]
+            sender_check = next((email for email in emails if email.lower().split("@")[-1] in {"gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "proton.me", "protonmail.com", "rediffmail.com"}), None)
+            sender_check = sender_check or (domains_found[0] if domains_found else emails[0])
             mismatch_info = detect_brand_domain_mismatch(claimed_org, sender_check)
 
         # 3. GitHub Supply Chain Audit
@@ -150,18 +168,40 @@ class PrimeNeuroSymbolicScorer:
         sch_check = verify_government_scholarship_url(final_url) if final_url else {"is_scholarship_phishing": False}
 
         # 5. ML Model Inference
+        # Strip explicit no-fee policies before both ML and symbolic analysis.
+        # The bag-of-words model otherwise treats a warning like "never requests
+        # fees or deposits" as evidence that a fee was requested.
+        payment_text = re.sub(
+            r"\b(?:never|does\s+not|doesn't|do\s+not|don't|not)\s+(?:request|requests|ask|asks|demand|demands|charge|charges|require|requires|collect|collects|pay|send|transfer|remit|deposit)\b[^.!?\n]{0,80}?\b(?:fees?|deposits?|bonds?|payments?|money)(?:\s+(?:and|or)\s+(?:fees?|deposits?|bonds?|payments?|money))*\b",
+            " ",
+            text,
+            flags=re.IGNORECASE,
+        )
+        payment_text = re.sub(
+            r"\b(?:never|does\s+not|doesn't|do\s+not|don't|not)\s+(?:pay|send|transfer|remit|deposit)\b[^.!?\n]{0,50}(?:₹|rs\.?|inr)\s*\d[\d,]*",
+            " ",
+            payment_text,
+            flags=re.IGNORECASE,
+        )
         ml_prob = 0.0
         ml_signals = []
-        if self.ml_detector and text:
-            pred = self.ml_detector.predict_detailed(text)
+        if self.ml_detector and payment_text.strip():
+            pred = self.ml_detector.predict_detailed(payment_text)
             ml_prob = pred["threat_probability"]
             ml_signals = pred["triggered_signals"]
 
         # 6. Student Scam Flags Synthesis
-        has_fee = (
-            "f01_upfront_fee_signals" in ml_signals or
-            any(k in text.lower() for k in ["deposit", "registration fee", "laptop fee", "caution money", "pay ₹", "pay rs"]) or
-            bool(re.search(r"(?:₹|rs\.?|inr)\s*\d+", text, re.IGNORECASE))
+        # The classifier is useful evidence, but its bag-of-words features do
+        # not understand negation (for example, "never requests fees"). Only
+        # set the actionable payment flag when the text contains an affirmative
+        # demand or an amount tied to a fee/deposit.
+        payment_text = payment_text.lower()
+        has_fee = bool(
+            re.search(r"\b(?:registration fee|laptop fee|caution money|security deposit|refundable deposit|processing fee|onboarding fee|training fee)\b", payment_text)
+            or re.search(r"\b(?:pay|transfer|send|deposit|remit|submit|demand|request|require|charge)\b.{0,55}\b(?:fee|deposit|bond|payment|money)\b", payment_text)
+            or re.search(r"\b(?:fee|deposit|bond|payment)\b.{0,40}(?:₹|rs\.?|inr)\s*\d+", payment_text)
+            or re.search(r"\b(?:pay|send|transfer|remit|deposit)\b.{0,32}(?:₹|rs\.?|inr)\s*\d[\d,]*", payment_text)
+            or re.search(r"(?:₹|rs\.?|inr)\s*\d[\d,]*.{0,32}\b(?:pay|send|transfer|remit|deposit)\b", payment_text)
         )
         has_zero_interview = (
             "f02_zero_interview_signals" in ml_signals or
@@ -195,7 +235,7 @@ class PrimeNeuroSymbolicScorer:
 
         # R: Redirection & Obfuscation
         score_r = 1.0
-        if redirect_info and redirect_info.get("hop_count", 0) > 0: score_r += 3.5
+        if redirect_info and (redirect_info.get("hop_count", 0) > 0 or redirect_info.get("is_shortened")): score_r += 3.5
         if free_form_info.get("is_free_form_or_host"): score_r += 5.0
         score_r = min(10.0, score_r)
 
@@ -216,6 +256,7 @@ class PrimeNeuroSymbolicScorer:
         score_e = 1.0
         if github_audit:
             if github_audit.get("is_compromised_repo"): score_e = 9.8
+            elif github_audit.get("audit_inconclusive"): score_e = 5.0
             elif github_audit.get("red_flags"): score_e = 6.5
             else: score_e = 2.0
         elif "f15_assessment_script_or_package_lure" in ml_signals:
@@ -259,6 +300,14 @@ class PrimeNeuroSymbolicScorer:
             fuzzy_risk = max(fuzzy_risk, 88.0)
         elif flags.upfront_fee or flags.task_scam or flags.mule_account_request:
             fuzzy_risk = max(fuzzy_risk, 76.0)
+        if github_audit and github_audit.get("audit_inconclusive"):
+            # An unreachable repository is unverified, not safe and not proven
+            # malicious. Keep it in the caution band without inventing findings.
+            fuzzy_risk = max(fuzzy_risk, 55.0 if github_audit.get("malware_sample_repository") else 45.0)
+        elif github_audit and not github_audit.get("is_compromised_repo"):
+            # Checking a few execution/configuration files cannot certify an
+            # arbitrary source repository as safe to run.
+            fuzzy_risk = max(fuzzy_risk, 55.0 if github_audit.get("malware_sample_repository") else 20.0)
 
         fuzzy_risk = round(min(100.0, max(0.0, fuzzy_risk)), 1)
 
@@ -280,10 +329,12 @@ class PrimeNeuroSymbolicScorer:
             why_risky.append(mismatch_info.get("alert"))
         if is_young_domain:
             why_risky.append(f"Domain registered only {domain_age} days ago (temporary phishing infrastructure).")
+        if redirect_info and redirect_info.get("is_shortened") and not redirect_info.get("hop_count"):
+            why_risky.append("The link uses a URL shortener and its destination could not be confirmed. Verify it through the organization's official site before opening it.")
         if free_form_info.get("is_free_form_or_host"):
             why_risky.append(free_form_info.get("risk_explanation"))
         if flags.upfront_fee:
-            why_risky.append("Demands upfront monetary payment (security deposit, registration, or kit charges) which violates employment laws.")
+            why_risky.append("Requests an upfront recruitment payment, a common job-scam warning. Verify the offer through the employer's official careers site before paying.")
         if flags.zero_interview:
             why_risky.append("Direct selection letter issued with zero technical interview or standard applicant vetting.")
         if flags.task_scam:
@@ -296,6 +347,10 @@ class PrimeNeuroSymbolicScorer:
             why_risky.append(sch_check.get("warning"))
         if github_audit and github_audit.get("red_flags"):
             why_risky.extend(github_audit["red_flags"])
+        elif github_audit and github_audit.get("audit_inconclusive"):
+            why_risky.append(github_audit.get("audit_note", "Repository contents could not be verified. Treat this repository as untrusted until its source files are reviewed."))
+        if github_audit and not github_audit.get("is_compromised_repo") and not github_audit.get("audit_inconclusive"):
+            why_risky.append("No known malicious hook was found in the files checked. This limited scan does not certify the full repository as safe to run.")
 
         if not why_risky:
             if ml_prob < 0.20:

@@ -26,33 +26,64 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 async function handlePageAnalysis(indicators, tab) {
   const incidentId = `INC-EXT-${Date.now().toString(36).toUpperCase()}`;
+  let analysis = null;
+  const pageText = indicators.page_text || "";
+  const repoUrl = indicators.github_repo_url || indicators.github_repos?.[0] || null;
+  const pageUrl = indicators.urls?.[0] || tab?.url || "";
+  const host = (() => {
+    try { return new URL(pageUrl).hostname.toLowerCase(); }
+    catch { return ""; }
+  })();
+  const isWebmail = /(^|\.)(mail\.google\.com|outlook\.live\.com|outlook\.office\.com|mail\.yahoo\.com)$/.test(host);
 
-  const payload = {
-    incident_id: incidentId,
-    extracted_indicators: indicators
+  const analyzerPayload = {
+    // GitHub README text is not a job-scam message. The repo scanner analyzes
+    // the repository itself; keep page text for email/web pages and messages.
+    input_text: indicators.github_repo_url ? null : pageText,
+    target_url: repoUrl || isWebmail || !/^https?:\/\//i.test(pageUrl) ? null : pageUrl,
+    github_repo_url: repoUrl,
   };
 
+  const correlationIndicators = { ...indicators };
+  delete correlationIndicators.page_text;
+  delete correlationIndicators.github_repo_url;
+
   try {
-    const response = await fetch(`${BACKEND_URL}/api/correlator/correlate`, {
+    const analysisResponse = await fetch(`${BACKEND_URL}/api/analyzer/analyze`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(analyzerPayload)
     });
 
-    if (!response.ok) {
-      throw new Error(`Server returned HTTP ${response.status}`);
+    if (!analysisResponse.ok) {
+      throw new Error(`Analyzer returned HTTP ${analysisResponse.status}`);
+    }
+    analysis = await analysisResponse.json();
+
+    const correlationResponse = await fetch(`${BACKEND_URL}/api/correlator/correlate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        incident_id: analysis.incident_id || incidentId,
+        extracted_indicators: analysis.extracted_indicators || correlationIndicators
+      })
+    });
+    if (!correlationResponse.ok) {
+      throw new Error(`Correlator returned HTTP ${correlationResponse.status}`);
     }
 
-    const data = await response.json();
-    console.log("[Factora Guardian] Threat Correlation Result:", data);
+    const data = await correlationResponse.json();
+    console.log("[Factora Guardian] Threat Analysis:", analysis);
+    console.log("[Factora Guardian] Threat Correlation:", data);
 
     // Save latest report in storage for popup.html
     const storedData = {
       incident_id: incidentId,
       url: indicators.urls[0] || "",
       claimed_org: indicators.claimed_organization || "",
+      analysis,
       record: data,
       timestamp: new Date().toLocaleTimeString()
     };
@@ -60,16 +91,20 @@ async function handlePageAnalysis(indicators, tab) {
 
     // Update Chrome Toolbar Badge
     if (tab && tab.id) {
-      if (data.is_recurring_campaign || (data.related_incidents && data.related_incidents.length > 0)) {
+      const riskScore = Number(analysis.fuzzy_risk_score || 0);
+      const hasMatches = data.is_recurring_campaign || (data.related_incidents && data.related_incidents.length > 0);
+      if (riskScore >= 70 || hasMatches) {
         chrome.action.setBadgeText({ text: "!", tabId: tab.id });
         chrome.action.setBadgeBackgroundColor({ color: "#EF4444", tabId: tab.id });
+      } else if (riskScore >= 45) {
+        chrome.action.setBadgeText({ text: "!", tabId: tab.id });
+        chrome.action.setBadgeBackgroundColor({ color: "#F59E0B", tabId: tab.id });
       } else {
-        chrome.action.setBadgeText({ text: "OK", tabId: tab.id });
-        chrome.action.setBadgeBackgroundColor({ color: "#10B981", tabId: tab.id });
+        chrome.action.setBadgeText({ text: "", tabId: tab.id });
       }
     }
 
-    return { success: true, record: data };
+    return { success: true, analysis, record: data };
   } catch (error) {
     console.warn("[Factora Guardian] Cannot reach backend on localhost:8000:", error.message);
     
@@ -79,6 +114,16 @@ async function handlePageAnalysis(indicators, tab) {
       chrome.action.setBadgeBackgroundColor({ color: "#F59E0B", tabId: tab.id });
     }
 
-    return { success: false, error: error.message };
+    const failedReport = {
+      incident_id: incidentId,
+      url: indicators.urls?.[0] || tab?.url || "",
+      claimed_org: indicators.claimed_organization || "",
+      analysis,
+      record: null,
+      error: error.message,
+      timestamp: new Date().toLocaleTimeString()
+    };
+    chrome.storage.local.set({ latestReport: failedReport });
+    return { success: Boolean(analysis), analysis, record: null, error: error.message };
   }
 }

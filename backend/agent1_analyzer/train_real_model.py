@@ -24,7 +24,6 @@ from pathlib import Path
 from typing import List, Dict, Tuple, Any, Optional
 
 import numpy as np
-import pandas as pd
 from scipy.sparse import hstack, csr_matrix
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.svm import LinearSVC

@@ -23,10 +23,10 @@
           },
           colors: {
             tactile: {
-              canvas: '#E9ECF2',
-              darkcanvas: '#0C0E12',
-              card: '#FCFCFE',
-              darkcard: '#16181E',
+              canvas: '#F3F5F8',
+              darkcanvas: '#101216',
+              card: '#FFFFFF',
+              darkcard: '#191C21',
               obsidian: '#18191E',
               darksurface: '#1E2028',
               border: 'rgba(0,0,0,0.06)',
@@ -40,7 +40,7 @@
           },
           boxShadow: {
             'tactile-card': '0 16px 36px -6px rgba(0, 0, 0, 0.05), 0 4px 12px -2px rgba(0, 0, 0, 0.03), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95)',
-            'tactile-darkcard': '0 16px 36px -6px rgba(0, 0, 0, 0.4), 0 4px 12px -2px rgba(0, 0, 0, 0.3), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1)',
+            'tactile-darkcard': '0 8px 24px -10px rgba(0, 0, 0, 0.5)',
             'keycap': '0 8px 20px -3px rgba(0, 0, 0, 0.32), 0 2px 6px -1px rgba(0, 0, 0, 0.18), inset 0 1px 1px 0 rgba(255, 255, 255, 0.22)',
             'keycap-inset': 'inset 0 3px 6px 0 rgba(0, 0, 0, 0.4)',
             'trough': 'inset 0 3px 8px 0 rgba(0, 0, 0, 0.12), 0 1px 1px 0 rgba(255, 255, 255, 0.8)'
@@ -57,14 +57,18 @@
 
   <style>
     body {
-      background-color: #E9ECF2;
+      background-color: #F3F5F8;
       color: #18191E;
       font-family: 'Plus Jakarta Sans', sans-serif;
       -webkit-font-smoothing: antialiased;
     }
     .dark body {
-      background-color: #0C0E12;
+      background-color: #101216;
       color: #F0F2F6;
+    }
+    .dark .shadow-tactile-card,
+    .dark .shadow-keycap {
+      box-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.5);
     }
     .gauge-needle {
       transform-origin: 50% 100%;
@@ -86,9 +90,11 @@
   <script type="text/babel">
     const { useState, useEffect, useRef } = React;
 
-    const API_BASE = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
-      ? 'http://localhost:8000/api'
-      : '/api';
+    const API_BASE = window.location.protocol === 'file:'
+      ? 'http://127.0.0.1:8000/api'
+      : (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
+          ? `${window.location.origin}/api`
+          : '/api');
 
     // SVG Icons
     const Icons = {
@@ -694,7 +700,7 @@
                     onClick={() => setSubTab(tab.id)}
                     className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 ${
                       isActive
-                        ? 'bg-tactile-obsidian text-white dark:bg-white dark:text-black shadow-keycap'
+                        ? 'bg-tactile-obsidian text-white dark:bg-white/10 dark:text-white dark:ring-1 dark:ring-white/10 shadow-sm'
                         : 'text-gray-500 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
                     }`}
                   >
@@ -820,7 +826,7 @@
                       onClick={() => setSelectedCategory(cat)}
                       className={`px-3 py-1.5 rounded-full whitespace-nowrap transition-all text-xs font-semibold ${
                         selectedCategory === cat
-                          ? 'bg-tactile-obsidian text-white dark:bg-white dark:text-black shadow-keycap'
+                          ? 'bg-tactile-obsidian text-white dark:bg-white/10 dark:text-white dark:ring-1 dark:ring-white/10 shadow-sm'
                           : 'bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-black/10'
                       }`}
                     >
@@ -1439,24 +1445,23 @@
       const [comm, setComm] = useState(null);
       const [portals, setPortals] = useState([]);
       const [dark, setDark] = useState(false);
+      const [modelStatus, setModelStatus] = useState({ analyzer: false, correlator: false, analyzerError: null, correlatorError: null, checked: false });
 
       useEffect(() => {
         fetch(`${API_BASE}/analyzer/mock`).then(r => r.json()).then(d => setThreat(d)).catch(() => {});
         fetch(`${API_BASE}/correlator/mock`).then(r => r.json()).then(d => setGraph(d)).catch(() => {});
-        fetch(`${API_BASE}/community/mock`).then(r => r.json()).then(d => {
-          setComm(d);
-          // Sync with Member 3 live SQLite telemetry if available
-          fetch(`${API_BASE}/community/dashboard/stats`).then(r => r.json()).then(stats => {
-            if (stats && stats.total_submitted_incidents) {
-              setComm(prev => ({
-                ...prev,
-                total_reported_money_lost_inr: stats.total_financial_loss_inr || prev?.total_reported_money_lost_inr,
-                internal_victim_reports_count: stats.total_submitted_incidents || prev?.internal_victim_reports_count
-              }));
-            }
-          }).catch(() => {});
-        }).catch(() => {});
+        fetch(`${API_BASE}/community/mock`).then(r => r.json()).then(d => setComm(d)).catch(() => {});
         fetch(`${API_BASE}/community/external-portals`).then(r => r.json()).then(d => setPortals(d)).catch(() => {});
+        Promise.all([
+          fetch(`${API_BASE}/analyzer/health`).then(r => r.ok ? r.json() : null),
+          fetch(`${API_BASE}/correlator/health`).then(r => r.ok ? r.json() : null)
+        ]).then(([analyzer, correlator]) => setModelStatus({
+          analyzer: Boolean(analyzer?.ml_model_loaded),
+          correlator: Boolean(correlator?.ml_model_loaded),
+          analyzerError: analyzer?.ml_model_error || (!analyzer ? 'Analyzer health endpoint unavailable' : null),
+          correlatorError: correlator?.ml_model_error || (!correlator ? 'Correlator health endpoint unavailable' : null),
+          checked: true
+        })).catch(() => setModelStatus({ analyzer: false, correlator: false, analyzerError: 'Health check failed', correlatorError: 'Health check failed', checked: true }));
       }, []);
 
       const handleAnalyze = async () => {
@@ -1475,6 +1480,7 @@
             body: JSON.stringify(payload)
           });
           const d = await res.json();
+          if (!res.ok) throw new Error(d.detail || `Analyzer request failed (${res.status})`);
           setThreat(d);
 
           const cRes = await fetch(`${API_BASE}/correlator/correlate`, {
@@ -1483,9 +1489,13 @@
             body: JSON.stringify({ incident_id: d.incident_id, extracted_indicators: d.extracted_indicators })
           });
           const cData = await cRes.json();
+          if (!cRes.ok) throw new Error(cData.detail || `Correlation request failed (${cRes.status})`);
           setGraph(cData);
         } catch (e) {
-          alert(e.message);
+          const hint = window.location.protocol === 'file:'
+            ? ' Start the Factora backend from the project folder with: uvicorn backend.main:app --reload --port 8000'
+            : '';
+          alert(`Scan could not be completed: ${e.message}.${hint}`);
         } finally {
           setLoading(false);
         }
@@ -1494,7 +1504,7 @@
       const loadDemo = (type) => {
         if (type === 'tcs') {
           setMode('text');
-          setText("Congratulations! Direct selection at Tata Consultancy Services without technical interview. To dispatch your corporate laptop and access card, kindly transfer refundable caution deposit of Rs. 3,500 to UPI ID tcs.hrverification@oksbi within 24 hours at bit.ly/tcs-deposit");
+          setText("Congratulations! Direct selection at Tata Consultancy Services without technical interview. To dispatch your corporate laptop and access card, kindly transfer refundable caution deposit of Rs. 3,500 to UPI ID tcs.hrverification@oksbi within 24 hours at https://bit.ly/tcs-deposit");
         } else if (type === 'github') {
           setMode('github');
           setGithub("https://github.com/tcs-assessment-portal/coding-round-2026");
@@ -1538,7 +1548,7 @@
                         onClick={() => setView('scan')}
                         className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all text-xs font-bold ${
                           view === 'scan'
-                            ? 'bg-tactile-obsidian text-white dark:bg-white dark:text-black shadow-keycap'
+                            ? 'bg-tactile-obsidian text-white dark:bg-white/10 dark:text-white dark:ring-1 dark:ring-white/10 shadow-sm'
                             : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
                         }`}
                       >
@@ -1547,7 +1557,7 @@
                           <span>Scanner & PRIME</span>
                         </div>
                         <span className={`text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded-md ${
-                          view === 'scan' ? 'bg-white/20 text-white dark:bg-black/10 dark:text-black' : 'bg-black/5 dark:bg-white/10 text-gray-500'
+                          view === 'scan' ? 'bg-white/20 text-white dark:bg-white/10 dark:text-gray-200' : 'bg-black/5 dark:bg-white/10 text-gray-500'
                         }`}>
                           LIVE
                         </span>
@@ -1557,7 +1567,7 @@
                         onClick={() => setView('network')}
                         className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all text-xs font-bold ${
                           view === 'network'
-                            ? 'bg-tactile-obsidian text-white dark:bg-white dark:text-black shadow-keycap'
+                            ? 'bg-tactile-obsidian text-white dark:bg-white/10 dark:text-white dark:ring-1 dark:ring-white/10 shadow-sm'
                             : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
                         }`}
                       >
@@ -1565,10 +1575,6 @@
                           <Icons.TopoGraph />
                           <span>3D Threat Terrain</span>
                         </div>
-                        <span className="relative flex h-2 w-2 mr-1">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-tactile-ember opacity-75"></span>
-                          <span className="relative inline-flex rounded-full h-2 w-2 bg-tactile-ember"></span>
-                        </span>
                       </button>
                     </div>
                   </div>
@@ -1577,14 +1583,14 @@
                   <div>
                     <div className="text-[10px] font-extrabold tracking-wider uppercase text-gray-400 dark:text-gray-500 px-3 mb-2 flex items-center justify-between">
                       <span>Community Defense</span>
-                      <span className="text-[9px] font-mono font-semibold text-emerald-600 dark:text-emerald-400">ACTIVE</span>
+                      <span className="text-[9px] font-mono font-semibold text-gray-400 dark:text-gray-500">REPORTS</span>
                     </div>
                     <div className="space-y-1">
                       <button
                         onClick={() => setView('community')}
                         className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all text-xs font-bold ${
                           view === 'community'
-                            ? 'bg-tactile-obsidian text-white dark:bg-white dark:text-black shadow-keycap'
+                            ? 'bg-tactile-obsidian text-white dark:bg-white/10 dark:text-white dark:ring-1 dark:ring-white/10 shadow-sm'
                             : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
                         }`}
                       >
@@ -1592,11 +1598,6 @@
                           <Icons.Community />
                           <span>Victim Hub & Loss</span>
                         </div>
-                        <span className={`text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded-md ${
-                          view === 'community' ? 'bg-white/20 text-white dark:bg-black/10 dark:text-black' : 'bg-red-500/10 text-red-600 dark:text-red-400'
-                        }`}>
-                          ₹49K
-                        </span>
                       </button>
 
                       <a
@@ -1627,7 +1628,7 @@
                         onClick={() => setView('bots')}
                         className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all text-xs font-bold ${
                           view === 'bots'
-                            ? 'bg-tactile-obsidian text-white dark:bg-white dark:text-black shadow-keycap'
+                            ? 'bg-tactile-obsidian text-white dark:bg-white/10 dark:text-white dark:ring-1 dark:ring-white/10 shadow-sm'
                             : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
                         }`}
                       >
@@ -1658,9 +1659,11 @@
                 <div className="px-3 py-2 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.04] dark:border-white/5 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400">ML Engine v2.4</span>
+                    <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400">AI Models</span>
                   </div>
-                  <span className="text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400">0.987 AUC</span>
+                  <span className={`text-[9px] font-mono font-bold ${modelStatus.analyzer && modelStatus.correlator ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                    {modelStatus.checked ? `${Number(modelStatus.analyzer) + Number(modelStatus.correlator)}/2 READY` : 'CHECKING'}
+                  </span>
                 </div>
               </div>
             </aside>
@@ -1681,8 +1684,10 @@
                 {/* Right Utility Buttons */}
                 <div className="flex items-center gap-2">
                   <div className="hidden sm:flex items-center gap-2 mr-3 px-3 py-1 rounded-full bg-black/5 dark:bg-white/5 text-xs font-bold">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    ML Engine Active (ROC-AUC 0.987)
+                    <span className={`w-2 h-2 rounded-full ${modelStatus.analyzer && modelStatus.correlator ? 'bg-emerald-500' : 'bg-amber-500'} ${modelStatus.checked ? '' : 'animate-pulse'}`}></span>
+                    {modelStatus.checked
+                      ? (modelStatus.analyzer && modelStatus.correlator ? 'Analyzer + Correlator Models Active' : 'One or more AI models unavailable')
+                      : 'Checking AI models…'}
                   </div>
                   <a
                     href="https://cybercrime.gov.in"
@@ -1698,51 +1703,26 @@
               {/* Viewport */}
               <main className="p-6 md:p-8 max-w-7xl mx-auto w-full space-y-6">
                 
-                {/* Top 4 Hardware Stat Tiles (Image 1 "Workflow" Style) */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* Single Dominant Dark Anchor Card */}
-                  <div className="p-5 bg-tactile-obsidian text-white rounded-[32px] shadow-keycap flex flex-col justify-between">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Threats Indexed</span>
-                      <span className="p-1 rounded-full bg-white/10 text-white"><Icons.ArrowUpRight /></span>
+                {/* New-user guidance in place of demo-only headline statistics. */}
+                <section className="bg-tactile-card dark:bg-tactile-darkcard rounded-2xl p-5 md:p-6 border border-black/[0.06] dark:border-white/[0.07] shadow-tactile-card dark:shadow-tactile-darkcard">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+                    <div className="max-w-xl">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Start with a check</p>
+                      <h1 className="mt-2 text-xl md:text-2xl font-bold tracking-tight">Verify before you respond.</h1>
+                      <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">Paste a message, check a link, or review an assessment repository. Factora will show the signals it finds and what to verify next.</p>
                     </div>
-                    <div className="text-4xl font-extrabold font-mono mt-3">32</div>
-                    <span className="text-[11px] text-emerald-400 font-bold mt-1 font-mono">↗ +14% this week</span>
-                  </div>
-
-                  <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] shadow-tactile-card border border-white/60 dark:border-white/5 flex flex-col justify-between">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Campus Losses Prevented</span>
-                      <span className="p-1 rounded-full bg-red-100 text-red-600 dark:bg-red-950"><Icons.ArrowUpRight /></span>
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      <span title={modelStatus.analyzerError || ''} className={`px-3 py-2 rounded-xl border ${modelStatus.analyzer ? 'border-emerald-600/20 bg-emerald-600/5 text-emerald-700 dark:text-emerald-300' : 'border-amber-600/20 bg-amber-600/5 text-amber-700 dark:text-amber-300'}`}>Analyzer {modelStatus.checked ? (modelStatus.analyzer ? 'ready' : 'unavailable') : 'checking'}</span>
+                      <span title={modelStatus.correlatorError || ''} className={`px-3 py-2 rounded-xl border ${modelStatus.correlator ? 'border-emerald-600/20 bg-emerald-600/5 text-emerald-700 dark:text-emerald-300' : 'border-amber-600/20 bg-amber-600/5 text-amber-700 dark:text-amber-300'}`}>Correlator {modelStatus.checked ? (modelStatus.correlator ? 'ready' : 'unavailable') : 'checking'}</span>
                     </div>
-                    <div className="text-4xl font-extrabold text-red-600 dark:text-red-400 font-mono mt-3">₹49,000</div>
-                    <span className="text-[11px] text-gray-500 font-bold mt-1">14 Student reports</span>
                   </div>
-
-                  <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] shadow-tactile-card border border-white/60 dark:border-white/5 flex flex-col justify-between">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Recurring Syndicates</span>
-                      <span className="p-1 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-950"><Icons.ArrowUpRight /></span>
-                    </div>
-                    <div className="text-4xl font-extrabold text-gray-900 dark:text-white font-mono mt-3">4 Rings</div>
-                    <span className="text-[11px] text-amber-600 dark:text-amber-400 font-bold mt-1">GhostRecruiter #4</span>
-                  </div>
-
-                  <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] shadow-tactile-card border border-white/60 dark:border-white/5 flex flex-col justify-between">
-                    <div className="flex justify-between items-center">
-                      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">ML Precision Rate</span>
-                      <span className="p-1 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950"><Icons.Check /></span>
-                    </div>
-                    <div className="text-4xl font-extrabold text-gray-900 dark:text-white font-mono mt-3">97.8%</div>
-                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1 font-mono">Calibrated XGBoost</span>
-                  </div>
-                </div>
+                </section>
 
                 {/* VIEW 1: Threat Intake & Assessment */}
                 {view === 'scan' && (
                   <div className="space-y-6">
                     {/* Intake Card */}
-                    <div className="bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] p-6 shadow-tactile-card border border-white/60 dark:border-white/5">
+                    <div className="bg-tactile-card dark:bg-tactile-darkcard rounded-2xl p-6 shadow-tactile-card dark:shadow-tactile-darkcard border border-black/[0.06] dark:border-white/[0.07]">
                       <div className="flex flex-wrap items-center justify-between border-b border-black/[0.06] dark:border-white/5 pb-4 mb-4 gap-2">
                         <div className="flex items-center gap-1.5 p-1 bg-black/5 dark:bg-white/5 rounded-full border border-black/[0.04] dark:border-white/5 text-xs font-bold">
                           {[
@@ -1756,7 +1736,7 @@
                               onClick={() => setMode(t.id)}
                               className={`px-3.5 py-1.5 rounded-full transition ${
                                 mode === t.id
-                                  ? 'bg-tactile-obsidian text-white dark:bg-white dark:text-black shadow-keycap'
+                                  ? 'bg-tactile-obsidian text-white dark:bg-white/10 dark:text-white dark:ring-1 dark:ring-white/10 shadow-sm'
                                   : 'text-gray-500 hover:text-black dark:hover:text-white'
                               }`}
                             >
@@ -1772,7 +1752,7 @@
                             TCS ₹3500 Scam
                           </button>
                           <button onClick={() => loadDemo('github')} className="px-3 py-1 rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 font-bold hover:bg-amber-200">
-                            GitHub Malware
+                            GitHub Repo Audit
                           </button>
                           <button onClick={() => loadDemo('legit')} className="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold hover:bg-emerald-200">
                             Microsoft Legit
@@ -1836,7 +1816,7 @@
                         <button
                           onClick={handleAnalyze}
                           disabled={loading}
-                          className="px-6 py-3 rounded-full bg-tactile-obsidian text-white dark:bg-white dark:text-black font-extrabold text-xs hover:opacity-90 transition shadow-keycap flex items-center gap-2"
+                          className="px-6 py-3 rounded-xl bg-tactile-obsidian text-white dark:bg-white/10 dark:text-white dark:border dark:border-white/10 font-bold text-xs hover:opacity-90 transition shadow-sm flex items-center gap-2"
                         >
                           {loading ? 'Evaluating Threat Signals...' : 'Run Neuro-Symbolic Threat Scan →'}
                         </button>
@@ -1963,41 +1943,46 @@
                       </span>
                       <div>
                         <h3 className="text-lg font-extrabold text-gray-900 dark:text-white">
-                          Accessibility Extensions & Bot Integrations
+                          Use Factora in your browser
                         </h3>
-                        <p className="text-xs text-gray-500">Member 2 and Member 3 automated detection webhooks.</p>
+                        <p className="text-xs text-gray-500">Scan suspicious messages and sites while you browse.</p>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                      <div className="p-5 bg-tactile-canvas dark:bg-tactile-darksurface rounded-2xl border border-black/[0.04] dark:border-white/5">
+                      <div className="p-5 bg-tactile-canvas dark:bg-tactile-darksurface rounded-2xl border border-black/[0.04] dark:border-white/5 md:col-span-2">
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-sm">Chrome Web Extension</span>
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Download available</span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">Auto-scans job posts on LinkedIn, Internshala, and Naukri.</p>
-                        <button className="mt-4 px-3.5 py-1.5 rounded-full bg-tactile-obsidian text-white dark:bg-white dark:text-black text-xs font-bold shadow-keycap">
-                          Extension Active
-                        </button>
+                        <p className="text-xs text-gray-500 mt-2">Analyze the current page, view findings, and re-scan from the browser toolbar. The download is configured to use this Factora server.</p>
+                        <a href="/extension/download" className="mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-tactile-obsidian text-white dark:bg-white/10 dark:text-white dark:border dark:border-white/10 text-xs font-bold shadow-sm hover:opacity-90 transition">
+                          Download extension (.zip) <span aria-hidden="true">→</span>
+                        </a>
+                        <div className="mt-4 pt-4 border-t border-black/[0.06] dark:border-white/[0.07]">
+                          <p className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Install in Chrome</p>
+                          <ol className="mt-2 ml-4 list-decimal space-y-1 text-[11px] leading-relaxed text-gray-500 dark:text-gray-400">
+                            <li>Download and extract the ZIP.</li>
+                            <li>Open <code className="font-mono">chrome://extensions</code> and turn on Developer mode.</li>
+                            <li>Choose <strong>Load unpacked</strong> and select the extracted <code className="font-mono">factora-extension</code> folder.</li>
+                          </ol>
+                        </div>
                       </div>
 
                       <div className="p-5 bg-tactile-canvas dark:bg-tactile-darksurface rounded-2xl border border-black/[0.04] dark:border-white/5">
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-sm">WhatsApp Safety Bot</span>
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-500">Planned</span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">Forward offer letters on WhatsApp for instant P.R.I.M.E. verification.</p>
-                        <button className="mt-4 px-3.5 py-1.5 rounded-full bg-tactile-obsidian text-white dark:bg-white dark:text-black text-xs font-bold shadow-keycap">
-                          Bot Connected
-                        </button>
+                        <p className="text-xs text-gray-500 mt-2">A WhatsApp integration is not available yet.</p>
                       </div>
 
                       <div className="p-5 bg-tactile-canvas dark:bg-tactile-darksurface rounded-2xl border border-black/[0.04] dark:border-white/5">
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-sm">FastAPI Gateway</span>
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">Available</span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-2">REST API for college placement cells & TPO ERPs.</p>
+                        <p className="text-xs text-gray-500 mt-2">REST API used by the dashboard and browser extension.</p>
                         <code className="mt-3 block text-[11px] font-mono text-gray-600 dark:text-gray-300">
                           POST /api/analyzer/analyze
                         </code>
@@ -2012,7 +1997,7 @@
               <footer className="border-t border-black/[0.06] dark:border-white/5 py-6 mt-12 bg-tactile-card dark:bg-tactile-darkcard px-8 mb-16 md:mb-0">
                 <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 gap-2">
                   <span>Factora Cyber Defense Platform • Problem 1: Safety Tech — FAKE OR REAL</span>
-                  <span>Trained on 32,500+ Real Benchmark Records • Calibrated ML & P.R.I.M.E. Engine</span>
+                  <span>Analyze messages, links, and repositories with Factora.</span>
                 </div>
               </footer>
 

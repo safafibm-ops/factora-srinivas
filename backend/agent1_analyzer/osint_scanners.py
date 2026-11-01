@@ -43,6 +43,12 @@ except ImportError:
             return _Result(domain, suffix, subdomain)
     tldextract = _FallbackTLDExtract()
 
+# Keep the public-suffix cache inside the project. The default cache lives next
+# to the installed package, which is read-only in many Windows/managed setups.
+_TLD_CACHE_DIR = Path(__file__).resolve().parent / ".cache" / "tldextract"
+_TLD_CACHE_DIR.mkdir(parents=True, exist_ok=True)
+_TLD_EXTRACTOR = tldextract.TLDExtract(cache_dir=str(_TLD_CACHE_DIR), suffix_list_urls=())
+
 try:
     import whois
 except ImportError:
@@ -145,7 +151,7 @@ def unroll_redirect_chain(start_url: str, max_hops: int = 7) -> Dict[str, Any]:
     except requests.exceptions.RequestException as e:
         error = str(e)
 
-    extracted = tldextract.extract(final_url)
+    extracted = _TLD_EXTRACTOR(final_url)
     registered_domain = f"{extracted.domain}.{extracted.suffix}" if extracted.suffix else extracted.domain
 
     return {
@@ -165,7 +171,7 @@ def get_domain_whois_age(domain: str) -> Dict[str, Any]:
     Queries live WHOIS data to determine the domain registration age in days.
     Domains younger than 90 days are flagged as critical high-risk phishing indicators.
     """
-    extracted = tldextract.extract(domain)
+    extracted = _TLD_EXTRACTOR(domain)
     root_domain = f"{extracted.domain}.{extracted.suffix}" if extracted.suffix else domain
 
     if not whois:
@@ -279,7 +285,7 @@ def detect_brand_domain_mismatch(claimed_organization: str, sender_domain_or_ema
 
     # Extract domain from email if email provided
     domain = sender_clean.split("@")[-1] if "@" in sender_clean else sender_clean
-    extracted = tldextract.extract(domain)
+    extracted = _TLD_EXTRACTOR(domain)
     registered_domain = f"{extracted.domain}.{extracted.suffix}" if extracted.suffix else extracted.domain
 
     matched_brand = None

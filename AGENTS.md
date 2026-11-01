@@ -1,6 +1,8 @@
 # Factora — Safety Tech Cyber Defense Monorepo
 **Problem 1: Fake or Real (Hackathon 2026)**
 
+For a cross-tool project handoff with current architecture, setup, model, extension, and deployment context, read [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md). This file remains the source for architectural rules and team boundaries.
+
 Factora is a specialized, multi-agent cyber defense platform engineered to protect students, job seekers, and developers from deceptive recruitment campaigns, phishing syndicates, academic accreditation scams, and repository supply-chain attacks.
 
 ---

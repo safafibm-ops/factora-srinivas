@@ -46,7 +46,11 @@ class GitHubAssessmentScanner:
 
     def __init__(self, github_token: Optional[str] = None):
         self.token = github_token or os.getenv("GITHUB_TOKEN")
-        self.headers = {"User-Agent": "Factora-SupplyChain-Auditor/1.0"}
+        self.headers = {
+            "User-Agent": "Factora-SupplyChain-Auditor/1.0",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
         if self.token:
             self.headers["Authorization"] = f"Bearer {self.token}"
 
@@ -63,7 +67,7 @@ class GitHubAssessmentScanner:
         """Fetches repository metadata from the GitHub API."""
         api_url = f"https://api.github.com/repos/{owner}/{repo}"
         try:
-            resp = requests.get(api_url, headers=self.headers, timeout=8)
+            resp = requests.get(api_url, headers=self.headers, timeout=5)
             if resp.status_code == 200:
                 data = resp.json()
                 created_at = data.get("created_at")
@@ -84,6 +88,7 @@ class GitHubAssessmentScanner:
                     "stars": data.get("stargazers_count", 0),
                     "forks": data.get("forks_count", 0),
                     "is_fork": data.get("fork", False),
+                    "topics": data.get("topics", []),
                     "default_branch": data.get("default_branch", "main"),
                     "description": data.get("description", ""),
                     "archived": data.get("archived", False)
@@ -94,6 +99,21 @@ class GitHubAssessmentScanner:
                 return {"error": f"GitHub API status {resp.status_code}: {resp.text[:100]}"}
         except Exception as e:
             return {"error": str(e)}
+
+    def fetch_repo_readme(self, owner: str, repo: str) -> Optional[str]:
+        """Fetch a bounded README excerpt to understand what the repository contains."""
+        api_url = f"https://api.github.com/repos/{owner}/{repo}/readme"
+        try:
+            resp = requests.get(api_url, headers=self.headers, timeout=6)
+            if resp.status_code != 200:
+                return None
+            data = resp.json()
+            encoded = data.get("content")
+            if data.get("encoding") == "base64" and encoded:
+                return base64.b64decode(encoded).decode("utf-8", errors="replace")[:12000]
+        except Exception:
+            pass
+        return None
 
     def fetch_raw_file(self, owner: str, repo: str, branch: str, file_path: str) -> Optional[str]:
         """
@@ -276,6 +296,46 @@ class GitHubAssessmentScanner:
 
         owner, repo = parsed
         meta = self.fetch_repo_metadata(owner, repo)
+        readme = self.fetch_repo_readme(owner, repo) if "error" not in meta else None
+        repository_context = " ".join([
+            owner,
+            repo,
+            str(meta.get("description") or ""),
+            " ".join(meta.get("topics", [])),
+            readme or "",
+        ]).lower()
+        malware_collection = bool(re.search(
+            r"(?:malware|ransomware|spyware|trojan|virus)[\w -]{0,50}(?:sample|samples|database|collection|source|repository|repo)|(?:sample|samples|database|collection)[\w -]{0,50}(?:of\s+)?(?:malware|ransomware|spyware|trojan|virus)",
+            repository_context,
+            re.IGNORECASE,
+        ))
+
+        if meta.get("error"):
+            red_flags = [
+                "Repository audit incomplete: GitHub metadata could not be retrieved, so source files and build hooks were not verified."
+            ]
+            if malware_collection:
+                red_flags.append(
+                    "Repository name identifies malware-related material. Treat files as hazardous research material; do not download or execute samples on a normal device. This does not by itself mean the repository owner is malicious."
+                )
+            return {
+                "repo_url": repo_url,
+                "owner": owner,
+                "repo": repo,
+                "is_valid_github_url": True,
+                "metadata": meta,
+                "vscode_tasks_scan": {"found": False, "is_malicious": False, "note": "Not scanned because GitHub metadata was unavailable."},
+                "npm_manifest_scan": {"found": False, "is_malicious": False, "note": "Not scanned because GitHub metadata was unavailable."},
+                "python_manifest_scan": {"has_setup_py": False, "has_requirements_txt": False, "is_malicious": False, "findings": []},
+                "is_compromised_repo": False,
+                "malware_sample_repository": malware_collection,
+                "audit_inconclusive": True,
+                "audit_note": "GitHub could not be reached. No malware finding is confirmed; do not treat this repository as safe until the source files are inspected.",
+                "severity": "UNVERIFIED",
+                "red_flags": red_flags,
+                "safe_to_clone": False,
+            }
+
         branch = meta.get("default_branch", "main") if "error" not in meta else "main"
 
         vscode_scan = self.scan_vscode_tasks(owner, repo, branch)
@@ -289,9 +349,18 @@ class GitHubAssessmentScanner:
         )
 
         red_flags = []
+        if malware_collection:
+            red_flags.append(
+                "Repository description/topics identify malware samples or source code. Treat files as hazardous research material; do not download or execute samples on a normal device. This does not by itself mean the repository owner is malicious."
+            )
         if meta.get("is_fresh_repo"):
             red_flags.append(f"Repository created only {meta.get('age_days')} days ago (disposable recruitment assessment lure).")
-        if meta.get("stars", 0) == 0:
+        audit_inconclusive = bool(meta.get("error"))
+        if audit_inconclusive:
+            red_flags.append(
+                "Repository audit incomplete: GitHub metadata could not be retrieved, so source files and build hooks were not verified."
+            )
+        if not meta.get("error") and meta.get("stars", 0) == 0:
             red_flags.append("Repository has 0 stars and no organic community history.")
         if vscode_scan.get("has_folder_open_autoexec"):
             red_flags.append("CRITICAL: .vscode/tasks.json triggers silent auto-execution upon opening workspace in VS Code.")
@@ -310,8 +379,11 @@ class GitHubAssessmentScanner:
             "npm_manifest_scan": npm_scan,
             "python_manifest_scan": python_scan,
             "is_compromised_repo": is_critical,
-            "severity": "CRITICAL RISK" if is_critical else ("CAUTION" if red_flags else "SAFE"),
+            "malware_sample_repository": malware_collection,
+            "audit_inconclusive": audit_inconclusive,
+            "audit_note": "GitHub could not be reached. No malware finding is confirmed; do not treat this repository as safe until the source files are inspected.",
+            "severity": "CRITICAL RISK" if is_critical else ("UNVERIFIED" if audit_inconclusive else ("CAUTION" if red_flags else "NO_KNOWN_HOOKS")),
             "red_flags": red_flags,
-            "safe_to_clone": not is_critical
+            "safe_to_clone": not is_critical and not audit_inconclusive and not malware_collection and not red_flags
         }
 

@@ -31,10 +31,12 @@ INCIDENT_CACHE: Dict[str, ThreatIntelligenceRecord] = {}
 
 @router.get("/health", summary="Agent 1 Health Status")
 async def health_check():
+    model_loaded = scorer.ml_detector is not None
     return {
-        "status": "ok",
+        "status": "ok" if model_loaded else "degraded",
         "agent": "Agent 1: Cyber Threat Detection Analyzer",
-        "ml_model_loaded": scorer.ml_detector is not None,
+        "ml_model_loaded": model_loaded,
+        "ml_model_error": scorer.ml_model_error,
         "ugc_registry_active": True,
         "github_scanner_active": True
     }

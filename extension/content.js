@@ -2,6 +2,8 @@
 // Scans webpages/emails for scam indicators and injects a non-intrusive floating tactile safety widget.
 
 (function () {
+  if (window.__FACTORA_GUARDIAN_CONTENT_READY__) return;
+  window.__FACTORA_GUARDIAN_CONTENT_READY__ = true;
   console.log("[Factora Guardian] Active on:", window.location.href);
 
   // Avoid running in iframes
@@ -14,19 +16,20 @@
   const GITHUB_REPO_REGEX = /https?:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+/gi;
 
   const SCAM_KEYWORD_PATTERNS = {
-    upfront_fee: /(registration\s+fee|security\s+deposit|laptop\s+bond|training\s+charge|processing\s+fee|stamp\s+duty|caution\s+money|kit\s+fee)/i,
+    upfront_fee: /(registration\s+fee|security\s+deposit|laptop\s+bond|training\s+charge|processing\s+fee|stamp\s+duty|caution\s+money|kit\s+fee|\b(?:send|transfer|pay|deposit)\s+(?:rs\.?|inr|₹)\s*[\d,]+)/i,
     zero_interview: /(direct\s+selection|direct\s+joining|without\s+interview|no\s+assessment|immediate\s+appointment)/i,
     task_scam: /(youtube\s+like|hotel\s+review|google\s+maps\s+rating|daily\s+task\s+salary|telegram\s+task)/i,
     mule_account: /(receive\s+in\s+your\s+account|upi\s+transfer\s+commission|account\s+rental|payment\s+partner)/i
   };
 
   function extractPageIndicators() {
-    const bodyText = document.body ? document.body.innerText : "";
+    const contentRoot = document.querySelector(".a3s.aiL") || document.querySelector("main") || document.body;
+    const bodyText = contentRoot ? contentRoot.innerText : "";
     const pageUrl = window.location.href;
     const hostname = window.location.hostname;
 
     // Collect all links on page
-    const links = Array.from(document.querySelectorAll("a[href]")).map(a => a.href);
+    const links = Array.from((contentRoot || document).querySelectorAll("a[href]")).map(a => a.href);
     
     // Extract unique indicators
     const upis = Array.from(new Set(bodyText.match(UPI_REGEX) || []));
@@ -35,7 +38,12 @@
       .filter(e => !e.endsWith("@example.com") && !e.includes("w3.org"))
       .slice(0, 5);
     
+    const pathParts = window.location.pathname.split("/").filter(Boolean);
+    const currentGitHubRepo = hostname === "github.com" && pathParts.length >= 2
+      ? `https://github.com/${pathParts[0]}/${pathParts[1]}`
+      : null;
     const githubRepos = Array.from(new Set([
+      ...(currentGitHubRepo ? [currentGitHubRepo] : []),
       ...(bodyText.match(GITHUB_REPO_REGEX) || []),
       ...links.filter(l => l.includes("github.com/"))
     ])).slice(0, 3);
@@ -72,7 +80,8 @@
       github_repos: githubRepos,
       suspicious_packages: [],
       student_scam_flags: flags,
-      snippet_text: bodyText.slice(0, 1500)
+      page_text: `${bodyText}\n\nVisible links:\n${links.slice(0, 40).join("\n")}`.slice(0, 10000),
+      github_repo_url: currentGitHubRepo
     };
   }
 
@@ -344,12 +353,66 @@
     });
 
     // 3. Request Analysis from Factora Backend via background.js
+    requestPageAnalysis(shadow, indicators);
+  }
+
+  function requestPageAnalysis(shadow, indicators) {
+    const badgeText = shadow.getElementById("badge-text");
+    const banner = shadow.getElementById("banner");
+    if (badgeText) badgeText.textContent = "Factora: Scanning Page...";
+    if (banner) {
+      banner.className = "threat-banner caution";
+      banner.textContent = "Running a fresh analyzer and historical-indicator scan...";
+    }
     chrome.runtime.sendMessage(
-      { type: "ANALYZE_PAGE", indicators: indicators },
-      (response) => {
-        updateWidgetUI(shadow, response, indicators);
+      { type: "ANALYZE_PAGE", indicators },
+      response => {
+        const messageError = chrome.runtime.lastError;
+        updateWidgetUI(shadow, messageError ? { success: false, error: messageError.message } : response, indicators);
       }
     );
+  }
+
+  // The popup can request a fresh scan without reloading the page. This works
+  // for single-page apps and avoids closing the popup before results arrive.
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request?.type !== "FACTORA_RESCAN_PAGE") return false;
+    const indicators = extractPageIndicators();
+    const host = document.getElementById("factora-guardian-host");
+    if (host?.shadowRoot) requestPageAnalysis(host.shadowRoot, indicators);
+    else injectGuardianWidget(indicators);
+    sendResponse({ accepted: true });
+    return false;
+  });
+
+  function renderEvidenceList(list, messages) {
+    list.replaceChildren();
+    (messages || []).forEach(message => {
+      const item = document.createElement("li");
+      item.textContent = String(message);
+      list.appendChild(item);
+    });
+  }
+
+  function renderChecklist(container, steps) {
+    container.replaceChildren();
+    const items = Array.isArray(steps) ? steps : [];
+    items.forEach(step => {
+      const label = document.createElement("label");
+      label.className = "check-item";
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      const text = document.createElement("span");
+      text.textContent = `${step.step_title || "Verify before proceeding"}: ${step.why_it_matters || ""} ${step.action_url_or_instruction || ""}`;
+      label.append(checkbox, text);
+      container.appendChild(label);
+    });
+    if (!items.length) {
+      const label = document.createElement("label");
+      label.className = "check-item";
+      label.textContent = "Do not send money, share credentials, or run repository code until independently verified.";
+      container.appendChild(label);
+    }
   }
 
   function updateWidgetUI(shadow, response, indicators) {
@@ -357,48 +420,51 @@
     const badgeText = shadow.getElementById("badge-text");
     const banner = shadow.getElementById("banner");
     const reasonsList = shadow.getElementById("reasons");
+    const checklist = shadow.getElementById("checklist");
 
-    if (!response || !response.success) {
-      // Local fallback detection
-      if (indicators.student_scam_flags.upfront_fee || indicators.uses_free_form_or_host) {
-        dot.className = "factora-pulse-dot danger";
-        badgeText.textContent = "⚠️ Potential Scam Detected";
-        banner.className = "threat-banner danger";
-        banner.innerHTML = "<strong>High Risk Detected</strong><br>Page demands upfront fee or uses free unverified form.";
-        reasonsList.innerHTML = `
-          <li>Requests upfront registration fee or security deposit</li>
-          <li>Uses unofficial or free form hosting for hiring intake</li>
-        `;
-      } else {
-        dot.className = "factora-pulse-dot safe";
-        badgeText.textContent = "Factora: Safe";
-        banner.className = "threat-banner safe";
-        banner.innerHTML = "<strong>No Threat Detected</strong><br>No known malicious syndicates or scam keywords found.";
-        reasonsList.innerHTML = "<li>Standard web page content. Exercise routine caution.</li>";
-      }
+    if (!response || !response.success || !response.analysis) {
+      const localFlags = indicators.student_scam_flags || {};
+      const localWarnings = [];
+      if (localFlags.upfront_fee) localWarnings.push("Possible payment request detected locally; backend analysis did not complete.");
+      if (localFlags.zero_interview) localWarnings.push("Possible no-interview offer language detected locally.");
+      if (indicators.github_repo_url) localWarnings.push("Repository contents were not analyzed because the backend scan did not complete.");
+      if (!localWarnings.length) localWarnings.push("The backend scan did not complete. No safe verdict is available.");
+      if (response?.error) localWarnings.push(`Backend error: ${response.error}`);
+      dot.className = `factora-pulse-dot ${localFlags.upfront_fee || indicators.github_repo_url ? "caution" : ""}`;
+      badgeText.textContent = "Factora: Scan Incomplete";
+      banner.className = "threat-banner caution";
+      banner.replaceChildren();
+      const heading = document.createElement("strong");
+      heading.textContent = "No safety verdict available";
+      banner.append(heading, document.createElement("br"), document.createTextNode("The backend analysis failed; do not treat this page as safe."));
+      renderEvidenceList(reasonsList, localWarnings);
+      renderChecklist(checklist, []);
       return;
     }
 
+    const analysis = response.analysis;
     const rec = response.record;
-    if (rec.is_recurring_campaign || rec.related_incidents.length > 0) {
-      dot.className = "factora-pulse-dot danger";
-      badgeText.textContent = `🚨 Alert: ${rec.detected_campaign_name || "Syndicate Detected"}`;
-      banner.className = "threat-banner danger";
-      banner.innerHTML = `
-        <strong>${rec.detected_campaign_name || "Organized Scam Syndicate"}</strong><br>
-        Correlated with ${rec.related_incidents.length} known student scam cases.
-      `;
+    const matches = Array.isArray(rec?.related_incidents) ? rec.related_incidents : [];
+    const score = Number(analysis.fuzzy_risk_score || 0);
+    let tier = analysis.risk_tier || "Caution";
+    if (matches.length && score < 45) tier = "Caution";
+    const severity = score >= 70 ? "danger" : score >= 45 || matches.length ? "caution" : "safe";
+    dot.className = `factora-pulse-dot ${severity}`;
+    badgeText.textContent = severity === "danger" ? `Factora: ${tier}` : `Factora: ${tier}`;
+    banner.className = `threat-banner ${severity}`;
+    banner.replaceChildren();
+    const heading = document.createElement("strong");
+    heading.textContent = `${tier} · ${score.toFixed(1)} / 100`;
+    banner.append(heading, document.createElement("br"));
+    banner.appendChild(document.createTextNode(matches.length
+      ? `Analyzer result plus ${matches.length} historical indicator match${matches.length === 1 ? "" : "es"}.`
+      : "Based on the analyzer scan. A low score is not a guarantee of safety."));
 
-      reasonsList.innerHTML = rec.recommended_community_warnings
-        .map(w => `<li>${w}</li>`)
-        .join("");
-    } else {
-      dot.className = "factora-pulse-dot safe";
-      badgeText.textContent = "Factora: Safe";
-      banner.className = "threat-banner safe";
-      banner.innerHTML = "<strong>Verified / Low Risk</strong><br>No matching scam campaigns found in Factora DB.";
-      reasonsList.innerHTML = "<li>No recurring threat syndicates identified.</li>";
-    }
+    const reasons = [...(analysis.why_it_is_risky_summary || [])];
+    matches.slice(0, 4).forEach(match => reasons.push(match.connection_explanation));
+    if (!reasons.length) reasons.push("No suspicious indicators were found in the available page content.");
+    renderEvidenceList(reasonsList, reasons);
+    renderChecklist(checklist, analysis.verify_before_proceeding_checklist);
   }
 
   // Run on page load
