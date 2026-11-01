@@ -21,23 +21,25 @@ def get_community_dashboard_html() -> str:
             theme: {
                 extend: {
                     colors: {
-                        canvas: '#F2F4F7',
-                        surface: '#FFFFFF',
-                        surfaceSecondary: '#F8FAFC',
-                        charcoal: '#141518',
-                        charcoalHover: '#23252A',
-                        borderMuted: '#E2E8F0',
-                        borderSubtle: '#CBD5E1',
-                        accentRed: '#EF4444',
-                        accentAmber: '#F59E0B',
+                        canvas: '#E9ECF2',
+                        surface: '#FCFCFE',
+                        surfaceSecondary: '#F4F6FA',
+                        charcoal: '#18191E',
+                        charcoalHover: '#252830',
+                        borderMuted: 'rgba(0, 0, 0, 0.06)',
+                        borderSubtle: 'rgba(0, 0, 0, 0.10)',
+                        accentRed: '#FF3B30',
+                        accentAmber: '#FF9500',
                         accentBlue: '#3B82F6',
-                        accentGreen: '#10B981',
-                        accentPurple: '#8B5CF6'
+                        accentGreen: '#00E599',
+                        accentPurple: '#8B5CF6',
+                        accentEmber: '#FF5722'
                     },
                     boxShadow: {
-                        'tactile': '0 2px 0 0 rgba(0, 0, 0, 0.05), 0 4px 6px -1px rgba(0, 0, 0, 0.02)',
-                        'tactile-pressed': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)',
-                        'tactile-card': '0 4px 20px -2px rgba(20, 21, 24, 0.04), 0 2px 6px -1px rgba(20, 21, 24, 0.02)'
+                        'tactile': '0 8px 20px -3px rgba(0, 0, 0, 0.06), 0 2px 6px -1px rgba(0, 0, 0, 0.03), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95)',
+                        'keycap': '0 8px 20px -3px rgba(0, 0, 0, 0.32), 0 2px 6px -1px rgba(0, 0, 0, 0.18), inset 0 1px 1px 0 rgba(255, 255, 255, 0.22)',
+                        'tactile-pressed': 'inset 0 3px 6px 0 rgba(0, 0, 0, 0.12)',
+                        'tactile-card': '0 16px 36px -6px rgba(0, 0, 0, 0.05), 0 4px 12px -2px rgba(0, 0, 0, 0.03), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95)'
                     }
                 }
             }
@@ -47,8 +49,8 @@ def get_community_dashboard_html() -> str:
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
         body {
             font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-            background-color: #F2F4F7;
-            color: #141518;
+            background-color: #E9ECF2;
+            color: #18191E;
             -webkit-font-smoothing: antialiased;
         }
         pre, code, .font-mono {
@@ -89,9 +91,9 @@ def get_community_dashboard_html() -> str:
     <header class="bg-surface border-b border-borderMuted sticky top-0 z-40 shadow-tactile">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-2xl bg-charcoal text-white flex items-center justify-center font-extrabold text-sm shadow-tactile">
+                <a href="/ui" class="w-10 h-10 rounded-2xl bg-charcoal text-white flex items-center justify-center font-black text-base shadow-keycap hover:scale-105 transition-transform" title="Back to Main Platform">
                     F
-                </div>
+                </a>
                 <div>
                     <div class="flex items-center gap-2">
                         <span class="font-extrabold text-sm tracking-tight text-charcoal">FACTORA</span>
@@ -103,6 +105,10 @@ def get_community_dashboard_html() -> str:
 
             <!-- Navigation Links & Action Buttons -->
             <div class="flex items-center gap-2 sm:gap-3">
+                <a href="/ui" class="hidden sm:flex px-3.5 py-1.5 rounded-full bg-surface border border-borderMuted text-charcoal hover:bg-gray-100 text-xs font-bold items-center gap-1.5 shadow-sm transition-all">
+                    <i class="fa-solid fa-arrow-left text-[10px] text-gray-400"></i>
+                    <span>Main Platform</span>
+                </a>
                 <nav class="hidden lg:flex items-center gap-1 text-xs font-semibold text-gray-600 bg-canvas p-1 rounded-full border border-borderMuted">
                     <a href="#feedSection" class="px-3 py-1.5 rounded-full hover:bg-surface hover:text-charcoal transition-all">Threat Feed</a>
                     <a href="#threatAlertsSection" class="px-3 py-1.5 rounded-full hover:bg-surface hover:text-charcoal transition-all">Threat Alerts</a>

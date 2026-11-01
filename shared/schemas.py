@@ -211,13 +211,32 @@ class CommunityLookupRequest(BaseModel):
 class VictimReportSubmission(BaseModel):
     """Payload when a user or placement cell reports a scam directly."""
     incident_title: str
-    claimed_organization: str
-    scam_type: str
-    amount_demanded_or_lost_inr: float
-    scammer_contacts: List[str]
-    scammer_links: List[str]
-    description: str
-    evidence_filenames: List[str] = []
+    claimed_organization: Optional[str] = ""
+    scam_type: str = "recruitment_fraud"
+    amount_demanded_or_lost_inr: float = 0.0
+    financial_loss_occurred: bool = False
+    scammer_contacts: List[str] = Field(default_factory=list)
+    scammer_links: List[str] = Field(default_factory=list)
+    suspicious_url_or_domain: Optional[str] = None
+    github_repo_link: Optional[str] = None
+    user_pseudonym: Optional[str] = None
+    official_complaint_filed: bool = False
+    complaint_ack_ref: Optional[str] = None
+    description: str = ""
+    evidence_filenames: List[str] = Field(default_factory=list)
+    evidence_file_ids: List[str] = Field(default_factory=list)
+
+
+class IncidentSubmissionResponse(BaseModel):
+    """Standard response model after a victim report is submitted."""
+    status: str = "success"
+    incident_id: str
+    database_id: Optional[int] = None
+    user_pseudonym: Optional[str] = None
+    verification_status: str = "SUBMITTED"
+    message: Optional[str] = None
+    complaint_draft_fir: Optional[str] = None
+    emergency_freeze_checklist: Optional[List[str]] = Field(default_factory=list)
 
 
 # ==========================================

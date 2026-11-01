@@ -54,15 +54,17 @@ This document tracks implementation status across all 4 team streams. Every memb
 ---
 
 ## 🛡️ Stream 3: Member 3 — Community Hub & External Reporting Portals
-- [x] Directory and role documentation established in `/backend/community_hub/AGENTS.md`.
-- [x] Working mock router endpoint `GET /api/community/mock` active.
-- [x] Indicator lookup endpoint `POST /api/community/lookup` active.
-- [x] External portals directory endpoint `GET /api/community/external-portals` active.
-- [x] Student victim report submission endpoint `POST /api/community/report` active.
-- [ ] Persistent storage for crowdsourced victim reports and INR loss counter.
-- [ ] Live external threat lookup connectors (ScamAdviser API, PhishTank, URLHaus).
-- [ ] Subreddit scraper / query integration for `r/Scams` emerging tactics.
-- [ ] Direct deep-link generator for `cybercrime.gov.in`, CERT-In, and National Consumer Helpline.
+- [x] Directory and role documentation established in /backend/community_hub/AGENTS.md.
+- [x] Working mock router endpoint GET /api/community/mock active.
+- [x] Indicator lookup endpoint POST /api/community/lookup active.
+- [x] External portals directory endpoint GET /api/community/external-portals active.
+- [x] Student victim report submission endpoint POST /api/community/report active.
+- [x] Persistent SQLite database (community_defense.db) for crowdsourced victim reports, INR loss counter, and PII masking.
+- [x] Integrated Evidence storage with file validation, MIME sanitization, and path traversal prevention.
+- [x] Automated legal aid FIR complaint drafting and emergency bank freeze checklists.
+- [x] Interactive Threat Relationship Graph with SVG node-link topology and click inspection.
+- [x] Decoupled agent integration endpoints with status badges for Agent 1 and Agent 2.
+- [x] Restyled Community Dashboard UI (/api/community/ui) to match tactile ceramic & obsidian hardware aesthetic with back-navigation to Main Platform.
 
 ---
 
