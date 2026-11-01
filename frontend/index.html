@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Factora — Autonomous Cyber Defense & Safety Tech</title>
+  <title>Factora — Autonomous Cyber Defense Platform</title>
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- Tailwind CSS CDN -->
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -23,27 +23,27 @@
           },
           colors: {
             tactile: {
-              bg: '#F2F4F7',
-              darkbg: '#0D0F12',
-              card: '#FFFFFF',
-              darkcard: '#16181D',
-              surface: '#F8F9FB',
-              darksurface: '#1E2127',
-              charcoal: '#131417',
-              border: '#E3E6EB',
-              darkborder: '#262930',
-              accent: '#FF5722',
-              coral: '#FF6B4A',
-              emerald: '#10B981',
-              amber: '#F59E0B',
-              danger: '#EF4444'
+              canvas: '#E9ECF2',
+              darkcanvas: '#0C0E12',
+              card: '#FCFCFE',
+              darkcard: '#16181E',
+              obsidian: '#18191E',
+              darksurface: '#1E2028',
+              border: 'rgba(0,0,0,0.06)',
+              darkborder: 'rgba(255,255,255,0.08)',
+              ember: '#FF5722',
+              emberlight: '#FF7A45',
+              emerald: '#00E599',
+              amber: '#FF9500',
+              danger: '#FF3B30'
             }
           },
           boxShadow: {
-            'tactile': '0 8px 24px -4px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.03)',
-            'tactile-heavy': '0 20px 35px -10px rgba(0, 0, 0, 0.08), 0 1px 3px 0 rgba(0, 0, 0, 0.04)',
-            'tactile-pill': '0 4px 14px 0 rgba(0, 0, 0, 0.22), inset 0 1px 1px 0 rgba(255, 255, 255, 0.25)',
-            'tactile-inset': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.05)'
+            'tactile-card': '0 16px 36px -6px rgba(0, 0, 0, 0.05), 0 4px 12px -2px rgba(0, 0, 0, 0.03), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95)',
+            'tactile-darkcard': '0 16px 36px -6px rgba(0, 0, 0, 0.4), 0 4px 12px -2px rgba(0, 0, 0, 0.3), inset 0 1px 1px 0 rgba(255, 255, 255, 0.1)',
+            'keycap': '0 8px 20px -3px rgba(0, 0, 0, 0.32), 0 2px 6px -1px rgba(0, 0, 0, 0.18), inset 0 1px 1px 0 rgba(255, 255, 255, 0.22)',
+            'keycap-inset': 'inset 0 3px 6px 0 rgba(0, 0, 0, 0.4)',
+            'trough': 'inset 0 3px 8px 0 rgba(0, 0, 0, 0.12), 0 1px 1px 0 rgba(255, 255, 255, 0.8)'
           }
         }
       }
@@ -57,33 +57,27 @@
 
   <style>
     body {
-      background-color: #F2F4F7;
-      color: #131417;
+      background-color: #E9ECF2;
+      color: #18191E;
       font-family: 'Plus Jakarta Sans', sans-serif;
       -webkit-font-smoothing: antialiased;
-      margin: 0;
     }
     .dark body {
-      background-color: #0D0F12;
-      color: #F0F2F5;
+      background-color: #0C0E12;
+      color: #F0F2F6;
     }
-    /* Gauge Needle Physics */
     .gauge-needle {
       transform-origin: 50% 100%;
       transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      filter: drop-shadow(2px 6px 6px rgba(0,0,0,0.35));
     }
-    /* Textured hatched bar patterns (from Image 1 Project Analysis) */
-    .hatched-bar {
-      background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.08) 4px, rgba(0,0,0,0.08) 8px);
+    .needle-groove {
+      box-shadow: inset 0 3px 6px rgba(0,0,0,0.14);
     }
-    .dark .hatched-bar {
-      background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(255,255,255,0.08) 4px, rgba(255,255,255,0.08) 8px);
-    }
-    /* Subtle custom scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 9999px; }
-    .dark ::-webkit-scrollbar-thumb { background: #374151; }
+    /* 3D stacked deck offsets */
+    .deck-layer-1 { transform: translateY(0) scale(1); z-index: 30; }
+    .deck-layer-2 { transform: translateY(8px) scale(0.96); z-index: 20; opacity: 0.9; }
+    .deck-layer-3 { transform: translateY(16px) scale(0.92); z-index: 10; opacity: 0.75; }
   </style>
 </head>
 <body class="min-h-screen">
@@ -96,86 +90,98 @@
       ? 'http://localhost:8000/api'
       : '/api';
 
-    // =========================================================================
-    // Icons (Unslop Crafted SVGs)
-    // =========================================================================
+    // SVG Icons
     const Icons = {
-      Shield: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>,
-      Graph: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>,
-      Users: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>,
-      External: () => <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>,
-      Bot: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>,
-      Search: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>,
-      ArrowUpRight: () => <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17"/></svg>,
-      Check: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>,
-      Alert: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+      Shield: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>,
+      TopoGraph: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/></svg>,
+      Community: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>,
+      External: () => <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>,
+      Bot: () => <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>,
+      ArrowUpRight: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M7 17L17 7M17 7H7M17 7V17"/></svg>,
+      Check: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>,
+      Alert: () => <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
     };
 
     // =========================================================================
-    // 1. Tactile Speedometer Gauge Widget (Reference Image 3 Style)
+    // 1. Carved Tactile Speedometer Gauge (Image 3 & Approved Mockup)
     // =========================================================================
-    function TactileGauge({ score, tier }) {
+    function CarvedTactileGauge({ score, tier }) {
       const angle = -90 + (score / 100) * 180;
-      
-      const getAccent = () => {
-        if (score >= 85) return { color: '#EF4444', text: 'Critical Scam', bg: 'rgba(239, 68, 68, 0.1)' };
-        if (score >= 70) return { color: '#FF5722', text: 'High Risk', bg: 'rgba(255, 87, 34, 0.1)' };
-        if (score >= 45) return { color: '#F59E0B', text: 'Caution', bg: 'rgba(245, 158, 11, 0.1)' };
-        if (score >= 20) return { color: '#3B82F6', text: 'Low Risk', bg: 'rgba(59, 130, 246, 0.1)' };
-        return { color: '#10B981', text: 'Verified Safe', bg: 'rgba(16, 185, 129, 0.1)' };
+
+      const getTierData = () => {
+        if (score >= 85) return { color: '#EF4444', label: 'CRITICAL SCAM', bg: 'rgba(239, 68, 68, 0.15)' };
+        if (score >= 70) return { color: '#FF5722', label: 'HIGH RISK', bg: 'rgba(255, 87, 34, 0.15)' };
+        if (score >= 45) return { color: '#F59E0B', label: 'CAUTION', bg: 'rgba(245, 158, 11, 0.15)' };
+        if (score >= 20) return { color: '#3B82F6', label: 'LOW RISK', bg: 'rgba(59, 130, 246, 0.15)' };
+        return { color: '#00E599', label: 'VERIFIED SAFE', bg: 'rgba(0, 229, 153, 0.15)' };
       };
 
-      const accent = getAccent();
+      const tierData = getTierData();
 
       return (
-        <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-6 shadow-tactile border border-tactile-border dark:border-tactile-darkborder relative overflow-hidden">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-[11px] font-bold tracking-wider text-gray-400 uppercase">P.R.I.M.E. Risk Meter</span>
-            <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
-              0 – 100 CALIBRATED
+        <div className="bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] p-6 shadow-tactile-card dark:shadow-tactile-darkcard border border-white/60 dark:border-white/5 relative overflow-hidden flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[11px] font-extrabold tracking-wider text-gray-400 uppercase">P.R.I.M.E. Risk Meter</span>
+            <span className="text-[10px] font-mono font-bold px-2.5 py-1 rounded-full bg-black/5 dark:bg-white/10 text-gray-700 dark:text-gray-300">
+              0 – 100 SCALE
             </span>
           </div>
 
-          {/* Semicircular Gauge Track */}
-          <div className="relative w-full h-36 flex items-end justify-center overflow-hidden pt-2">
-            <svg viewBox="0 0 200 115" className="w-56 h-32">
+          {/* Carved Gauge Dial */}
+          <div className="relative w-full h-40 flex items-end justify-center overflow-hidden pt-2">
+            <svg viewBox="0 0 200 120" className="w-64 h-36">
               <defs>
-                <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#10B981" />
+                <linearGradient id="carvedGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#00E599" />
                   <stop offset="35%" stopColor="#3B82F6" />
-                  <stop offset="65%" stopColor="#F59E0B" />
-                  <stop offset="100%" stopColor="#EF4444" />
+                  <stop offset="65%" stopColor="#FF9500" />
+                  <stop offset="100%" stopColor="#FF3B30" />
                 </linearGradient>
+                {/* Trough Inner Shadow filter */}
+                <filter id="insetShadow">
+                  <feOffset dx="0" dy="3" />
+                  <feGaussianBlur stdDeviation="3" result="offset-blur" />
+                  <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse" />
+                  <feFlood floodColor="black" floodOpacity="0.25" result="color" />
+                  <feComposite operator="in" in="color" in2="inverse" result="shadow" />
+                  <feComposite operator="over" in="shadow" in2="SourceGraphic" />
+                </filter>
               </defs>
-              {/* Back track */}
+
+              {/* Recessed Groove Track */}
               <path
-                d="M 24 100 A 76 76 0 0 1 176 100"
+                d="M 22 105 A 78 78 0 0 1 178 105"
                 fill="none"
-                stroke="#E9ECEF"
-                strokeWidth="14"
+                stroke="#D8DCE4"
+                strokeWidth="16"
                 strokeLinecap="round"
                 className="dark:stroke-gray-800"
+                filter="url(#insetShadow)"
               />
-              {/* Active colored arc */}
+
+              {/* Active High-Contrast Arc */}
               <path
-                d="M 24 100 A 76 76 0 0 1 176 100"
+                d="M 22 105 A 78 78 0 0 1 178 105"
                 fill="none"
-                stroke="url(#gaugeGradient)"
-                strokeWidth="14"
-                strokeDasharray="238.7"
-                strokeDashoffset={238.7 - (238.7 * score) / 100}
+                stroke="url(#carvedGradient)"
+                strokeWidth="16"
+                strokeDasharray="245"
+                strokeDashoffset={245 - (245 * score) / 100}
                 strokeLinecap="round"
               />
-              {/* Center Pin */}
-              <circle cx="100" cy="100" r="9" fill="#131417" className="dark:fill-white" />
-              {/* Needle Pointer */}
+
+              {/* Center Metallic Base */}
+              <circle cx="100" cy="105" r="14" fill="#E2E6EE" className="dark:fill-gray-700" />
+              <circle cx="100" cy="105" r="9" fill="#18191E" className="dark:fill-white" />
+
+              {/* Extruded 3D Matte Needle */}
               <line
                 x1="100"
-                y1="100"
+                y1="105"
                 x2="100"
-                y2="32"
-                stroke="#131417"
-                strokeWidth="3.5"
+                y2="30"
+                stroke="#18191E"
+                strokeWidth="4.5"
                 strokeLinecap="round"
                 className="gauge-needle dark:stroke-white"
                 style={{ transform: `rotate(${angle}deg)` }}
@@ -183,23 +189,24 @@
             </svg>
           </div>
 
-          {/* Number & Tier Badge */}
-          <div className="text-center mt-1">
-            <div className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white font-mono">
+          {/* Calibrated Numerical Readout */}
+          <div className="text-center mt-2">
+            <div className="text-5xl font-black tracking-tight text-gray-900 dark:text-white font-mono">
               {score}
-              <span className="text-xs font-normal text-gray-400 font-sans ml-1">INDEX</span>
+              <span className="text-xs font-semibold text-gray-400 font-sans ml-1.5">INDEX</span>
             </div>
+            
             <div
-              className="inline-flex items-center gap-1.5 px-3 py-1 mt-2 rounded-full text-xs font-bold uppercase tracking-wider"
-              style={{ backgroundColor: accent.bg, color: accent.color }}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 mt-2.5 rounded-full text-xs font-black uppercase tracking-wider"
+              style={{ backgroundColor: tierData.bg, color: tierData.color }}
             >
-              <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: accent.color }}></span>
-              {tier || accent.text}
+              <span className="w-2 h-2 rounded-full animate-ping" style={{ backgroundColor: tierData.color }}></span>
+              {tier || tierData.label}
             </div>
           </div>
 
-          {/* Calibrated Ticks (Reference Image 3: 0, 18, 32) */}
-          <div className="flex justify-between w-full text-[11px] text-gray-400 font-mono mt-4 px-2 border-t border-gray-100 dark:border-gray-800 pt-3">
+          {/* Reference Image 3 Calibrations (0, 18, 32... 100) */}
+          <div className="flex justify-between w-full text-xs text-gray-400 font-mono mt-4 pt-3 border-t border-black/[0.06] dark:border-white/5">
             <span>0 SAFE</span>
             <span className="font-bold text-gray-700 dark:text-gray-300">50 CAUTION</span>
             <span>100 THREAT</span>
@@ -209,9 +216,52 @@
     }
 
     // =========================================================================
-    // 2. 3D Topographic / Wave Threat Graph Canvas (Reference Image 5 Style)
+    // 2. 3D Stacked Card Deck (Image 3 "Shiela Young" & Approved Mockup)
     // =========================================================================
-    function TopographicThreatGraph({ graphData }) {
+    function StackedCardDeck({ claimedOrg, domainMismatch, officialDomain }) {
+      return (
+        <div className="relative h-44 flex items-center justify-center p-2">
+          {/* Layer 3 (Deepest) */}
+          <div className="absolute inset-x-4 top-4 h-32 rounded-3xl bg-[#141519] deck-layer-3 shadow-lg border border-white/5"></div>
+          
+          {/* Layer 2 (Middle) */}
+          <div className="absolute inset-x-2 top-2 h-32 rounded-3xl bg-[#20222A] deck-layer-2 shadow-xl border border-white/10"></div>
+
+          {/* Layer 1 (Top Hero Surface) */}
+          <div className="relative w-full h-32 rounded-3xl bg-white dark:bg-[#282B35] deck-layer-1 p-4 shadow-keycap flex items-center justify-between border border-white/60 dark:border-white/15">
+            <div className="flex items-center gap-3">
+              <div className="relative">
+                <div className="w-12 h-12 rounded-2xl bg-tactile-obsidian text-white flex items-center justify-center font-black text-lg shadow-keycap">
+                  {claimedOrg ? claimedOrg[0] : 'T'}
+                </div>
+                <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-black"></span>
+              </div>
+              <div>
+                <h4 className="text-sm font-extrabold text-gray-900 dark:text-white leading-tight">
+                  {claimedOrg || 'Tata Consultancy Services'}
+                </h4>
+                <span className="text-[11px] font-mono font-bold text-gray-500 dark:text-gray-400">
+                  {domainMismatch ? '⚠️ Domain Spoof Detected' : '✓ Verified Brand Entity'}
+                </span>
+                <div className="mt-1 text-[10px] text-gray-400 font-mono">
+                  Official: {officialDomain || 'tcs.com'}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center gap-1 text-gray-400">
+              <button className="p-1 hover:text-black dark:hover:text-white">▲</button>
+              <button className="p-1 hover:text-black dark:hover:text-white">▼</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // =========================================================================
+    // 3. 3D Topographic Ember Threat Terrain Graph (Image 5 & Approved Mockup)
+    // =========================================================================
+    function TopographicEmberGraph({ graphData }) {
       const canvasRef = useRef(null);
 
       useEffect(() => {
@@ -221,68 +271,67 @@
         const width = canvas.width;
         const height = canvas.height;
 
-        let animationFrame;
+        let anim;
         let t = 0;
 
         const nodes = graphData?.nodes || [
-          { id: 'inc:target', label: 'Offer Letter (TCS Lookalike)', node_type: 'incident', x: 260, y: 140 },
-          { id: 'dom:tcs-fake', label: 'tcs-careers-portal.in', node_type: 'domain', x: 120, y: 220 },
-          { id: 'upi:scam', label: 'tcs.hrverification@oksbi', node_type: 'phone_upi', x: 420, y: 210 },
-          { id: 'camp:syndicate', label: 'GhostRecruiter Syndicate #4', node_type: 'campaign', x: 300, y: 290 },
-          { id: 'repo:backdoor', label: 'GitHub: react-interview-test', node_type: 'github_repo', x: 150, y: 80 }
+          { id: 'inc:target', label: 'Offer Letter (TCS Lookalike)', node_type: 'incident', x: 270, y: 130 },
+          { id: 'dom:tcs-fake', label: 'tcs-careers-portal.in', node_type: 'domain', x: 130, y: 220 },
+          { id: 'upi:scam', label: 'tcs.hrverification@oksbi', node_type: 'phone_upi', x: 440, y: 210 },
+          { id: 'camp:syndicate', label: 'GhostRecruiter Syndicate #4', node_type: 'campaign', x: 310, y: 290 },
+          { id: 'repo:backdoor', label: 'GitHub: react-candidate-test', node_type: 'github_repo', x: 160, y: 70 }
         ];
 
         const edges = graphData?.edges || [
-          { source: 'inc:target', target: 'dom:tcs-fake', relationship: 'unauthorized_domain' },
-          { source: 'inc:target', target: 'upi:scam', relationship: 'demands_₹3500_deposit' },
-          { source: 'dom:tcs-fake', target: 'camp:syndicate', relationship: 'attributed_campaign' },
-          { source: 'inc:target', target: 'repo:backdoor', relationship: 'malware_lure' }
+          { source: 'inc:target', target: 'dom:tcs-fake', rel: 'unauthorized_domain' },
+          { source: 'inc:target', target: 'upi:scam', rel: 'demands_₹3500_deposit' },
+          { source: 'dom:tcs-fake', target: 'camp:syndicate', rel: 'attributed_campaign' },
+          { source: 'inc:target', target: 'repo:backdoor', rel: 'malware_assessment' }
         ];
 
-        function render() {
-          t += 0.015;
+        function draw() {
+          t += 0.016;
           ctx.clearRect(0, 0, width, height);
 
-          // 1. Draw 3D Topographic Mountain / Ridge Wave Layers (Image 5 aesthetic)
-          const ridges = [
-            { base: height - 40, amp: 28, freq: 0.008, color: '#16181D', alpha: 0.08 },
-            { base: height - 70, amp: 38, freq: 0.012, color: '#FF5722', alpha: 0.15 },
-            { base: height - 110, amp: 45, freq: 0.015, color: '#FF7043', alpha: 0.22 },
-            { base: height - 150, amp: 55, freq: 0.018, color: '#131417', alpha: 0.06 }
+          // 1. Draw 3D Volcanic Ember Ridges (Image 5 style)
+          const ridgeLayers = [
+            { base: height - 30, amp: 26, freq: 0.007, fill: '#141519', stroke: '#2A2C34', alpha: 0.95 },
+            { base: height - 65, amp: 36, freq: 0.011, fill: '#E64A19', stroke: '#FF5722', alpha: 0.28 },
+            { base: height - 105, amp: 46, freq: 0.015, fill: '#FF5722', stroke: '#FF7A45', alpha: 0.35 },
+            { base: height - 150, amp: 56, freq: 0.018, fill: '#FF8A65', stroke: '#FFAB91', alpha: 0.18 }
           ];
 
-          ridges.forEach((r, idx) => {
+          ridgeLayers.forEach((r, idx) => {
             ctx.beginPath();
             ctx.moveTo(0, height);
             for (let x = 0; x <= width; x += 10) {
-              const y = r.base - Math.sin(x * r.freq + t + idx) * r.amp;
+              const y = r.base - Math.sin(x * r.freq + t + idx * 0.8) * r.amp;
               ctx.lineTo(x, y);
             }
             ctx.lineTo(width, height);
             ctx.closePath();
-            ctx.fillStyle = r.color;
+            ctx.fillStyle = r.fill;
             ctx.globalAlpha = r.alpha;
             ctx.fill();
-            ctx.globalAlpha = 1.0;
 
-            // Highlight ridge line
+            // Luminous Crest Line
             ctx.beginPath();
             for (let x = 0; x <= width; x += 10) {
-              const y = r.base - Math.sin(x * r.freq + t + idx) * r.amp;
+              const y = r.base - Math.sin(x * r.freq + t + idx * 0.8) * r.amp;
               if (x === 0) ctx.moveTo(x, y);
               else ctx.lineTo(x, y);
             }
-            ctx.strokeStyle = r.color;
-            ctx.globalAlpha = r.alpha * 1.8;
-            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = r.stroke;
+            ctx.lineWidth = 1.8;
+            ctx.globalAlpha = Math.min(1.0, r.alpha * 2.2);
             ctx.stroke();
             ctx.globalAlpha = 1.0;
           });
 
-          // 2. Draw Curved Bezier Connection Splines
+          // 2. Connect Bezier Splines
           const nodeMap = {};
           nodes.forEach((n, i) => {
-            const dynamicY = (n.y || (100 + i * 40)) + Math.sin(t + i) * 3;
+            const dynamicY = (n.y || (90 + i * 45)) + Math.sin(t + i) * 3;
             nodeMap[n.id] = { x: n.x || (100 + i * 110), y: dynamicY, data: n };
           });
 
@@ -293,108 +342,102 @@
               ctx.beginPath();
               ctx.moveTo(from.x, from.y);
               const cpX = (from.x + to.x) / 2;
-              const cpY = (from.y + to.y) / 2 - 25;
+              const cpY = (from.y + to.y) / 2 - 28;
               ctx.quadraticCurveTo(cpX, cpY, to.x, to.y);
-              ctx.strokeStyle = '#D1D5DB';
-              ctx.lineWidth = 1.5;
+              ctx.strokeStyle = 'rgba(255, 87, 34, 0.45)';
+              ctx.lineWidth = 1.8;
               ctx.setLineDash([4, 4]);
               ctx.stroke();
               ctx.setLineDash([]);
 
+              // Relationship Label
               ctx.font = '10px JetBrains Mono';
-              ctx.fillStyle = '#9CA3AF';
-              ctx.fillText(e.relationship, cpX - 25, cpY);
+              ctx.fillStyle = '#6B7280';
+              ctx.fillText(e.rel, cpX - 25, cpY);
             }
           });
 
-          // 3. Draw Floating Tactile Nodes
-          nodes.forEach((n, i) => {
+          // 3. Draw Floating Physical Nodes
+          nodes.forEach(n => {
             const pos = nodeMap[n.id];
             if (!pos) return;
 
-            // Soft Ambient Glow
+            // Halo Glow
             ctx.beginPath();
             ctx.arc(pos.x, pos.y, 22, 0, Math.PI * 2);
-            ctx.fillStyle = n.node_type === 'campaign' ? 'rgba(239,68,68,0.18)' : 'rgba(255,87,34,0.15)';
+            ctx.fillStyle = n.node_type === 'campaign' ? 'rgba(239,68,68,0.25)' : 'rgba(255,87,34,0.2)';
             ctx.fill();
 
-            // Node Outer Shell
+            // Core Disk
             ctx.beginPath();
             ctx.arc(pos.x, pos.y, 14, 0, Math.PI * 2);
-            ctx.fillStyle = n.node_type === 'incident' ? '#131417'
+            ctx.fillStyle = n.node_type === 'incident' ? '#18191E'
               : (n.node_type === 'campaign' ? '#EF4444'
-              : (n.node_type === 'phone_upi' ? '#F59E0B' : '#3B82F6'));
+              : (n.node_type === 'phone_upi' ? '#FF9500' : '#3B82F6'));
             ctx.fill();
 
-            // Specular border
+            // Specular Rim
             ctx.strokeStyle = '#FFFFFF';
             ctx.lineWidth = 2.5;
             ctx.stroke();
 
-            // Node Label
+            // Text Label
             ctx.font = '11px Plus Jakarta Sans';
             ctx.fillStyle = '#111827';
             ctx.textAlign = 'center';
-            ctx.fillText(n.label, pos.x, pos.y + 26);
+            ctx.fillText(n.label, pos.x, pos.y + 28);
           });
 
-          animationFrame = requestAnimationFrame(render);
+          anim = requestAnimationFrame(draw);
         }
 
-        render();
-        return () => cancelAnimationFrame(animationFrame);
+        draw();
+        return () => cancelAnimationFrame(anim);
       }, [graphData]);
 
       return (
-        <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-6 shadow-tactile-heavy border border-tactile-border dark:border-tactile-darkborder relative">
+        <div className="bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] p-6 shadow-tactile-card dark:shadow-tactile-darkcard border border-white/60 dark:border-white/5 relative">
           <div className="flex flex-wrap items-center justify-between mb-4 gap-2">
             <div>
               <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-xl bg-tactile-charcoal text-white dark:bg-white dark:text-black shadow-tactile-pill">
-                  <Icons.Graph />
+                <span className="p-2 rounded-2xl bg-tactile-obsidian text-white shadow-keycap">
+                  <Icons.TopoGraph />
                 </span>
                 <h3 className="text-base font-extrabold text-gray-900 dark:text-white">
-                  Topographic Threat Intelligence Canvas
+                  3D Topographic Threat Terrain
                 </h3>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Visualizing correlated multi-incident infrastructure across syndicates, lookalike domains, and mule UPI accounts.
+                Forensic infrastructure map showing connected fake domains, mule accounts, and active syndicates.
               </p>
             </div>
-            
+
             {graphData?.detected_campaign_name && (
-              <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 border border-red-200 dark:border-red-900 flex items-center gap-1.5 font-mono">
-                <span className="w-2 h-2 rounded-full bg-red-600 animate-ping"></span>
-                CAMPAIGN: {graphData.detected_campaign_name}
+              <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 border border-red-200 dark:border-red-900 flex items-center gap-2 font-mono">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping"></span>
+                ACTIVE CAMPAIGN: {graphData.detected_campaign_name}
               </span>
             )}
           </div>
 
-          {/* Interactive Canvas */}
-          <div className="rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 bg-[#FAFAFC] dark:bg-[#0B0C0E] flex justify-center">
-            <canvas ref={canvasRef} width="680" height="360" className="w-full max-w-[680px] h-auto"></canvas>
+          <div className="rounded-2xl overflow-hidden border border-black/5 dark:border-white/5 bg-[#0D0F14] flex justify-center shadow-inner">
+            <canvas ref={canvasRef} width="720" height="370" className="w-full max-w-[720px] h-auto"></canvas>
           </div>
 
-          {/* Connected Past Incidents Attribution Deck */}
+          {/* Historical Attribution Strip */}
           {graphData?.related_incidents && graphData.related_incidents.length > 0 && (
-            <div className="mt-4 space-y-2">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Syndicate Attack Attribution</span>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {graphData.related_incidents.map((rel, idx) => (
-                  <div key={idx} className="p-3.5 bg-gray-50 dark:bg-tactile-darksurface rounded-2xl border border-gray-200 dark:border-gray-800 text-xs">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-mono font-bold text-gray-900 dark:text-white">{rel.matched_incident_id}</span>
-                      <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
-                        {(rel.relationship_confidence * 100).toFixed(0)}% MATCH
-                      </span>
-                    </div>
-                    <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{rel.connection_explanation}</p>
-                    <div className="mt-2 text-[10px] text-gray-500 font-mono">
-                      Shared: {rel.shared_indicators.join(' • ')}
-                    </div>
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+              {graphData.related_incidents.map((rel, idx) => (
+                <div key={idx} className="p-4 bg-tactile-canvas dark:bg-tactile-darksurface rounded-2xl border border-black/[0.04] dark:border-white/5 text-xs">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="font-mono font-bold text-gray-900 dark:text-white">{rel.matched_incident_id}</span>
+                    <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      {(rel.relationship_confidence * 100).toFixed(0)}% MATCH
+                    </span>
                   </div>
-                ))}
-              </div>
+                  <p className="text-gray-600 dark:text-gray-300 leading-relaxed">{rel.connection_explanation}</p>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -402,25 +445,21 @@
     }
 
     // =========================================================================
-    // 3. Interactive Verification Checklist (Mandatory Feature)
+    // 4. Interactive "Before You Proceed" Verification Checklist
     // =========================================================================
     function VerificationChecklist({ checklist, incidentId }) {
-      const [checkedMap, setCheckedMap] = useState({});
+      const [checked, setChecked] = useState({});
 
-      const toggleCheck = (idx) => {
-        setCheckedMap(prev => ({ ...prev, [idx]: !prev[idx] }));
-      };
-
-      const completed = Object.values(checkedMap).filter(Boolean).length;
+      const toggle = (idx) => setChecked(p => ({ ...p, [idx]: !p[idx] }));
+      const doneCount = Object.values(checked).filter(Boolean).length;
       const total = checklist.length;
-      const isAllDone = total > 0 && completed === total;
 
       return (
-        <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-6 shadow-tactile-heavy border border-tactile-border dark:border-tactile-darkborder">
+        <div className="bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] p-6 shadow-tactile-card dark:shadow-tactile-darkcard border border-white/60 dark:border-white/5">
           <div className="flex items-center justify-between mb-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="p-1.5 rounded-xl bg-emerald-600 text-white shadow-tactile-pill">
+                <span className="p-2 rounded-2xl bg-emerald-600 text-white shadow-keycap">
                   <Icons.Shield />
                 </span>
                 <h3 className="text-base font-extrabold text-gray-900 dark:text-white">
@@ -428,18 +467,18 @@
                 </h3>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Mandatory protection actions students must verify prior to paying fees, replying, or downloading test code.
+                Mandatory defense steps to verify prior to sending money, replying, or downloading code.
               </p>
             </div>
-            
+
             <div className="text-right">
-              <span className="text-xs font-bold font-mono text-gray-900 dark:text-white">
-                {completed} / {total} Verified
+              <span className="text-xs font-mono font-bold text-gray-900 dark:text-white">
+                {doneCount} / {total} Verified
               </span>
-              <div className="w-28 h-2 bg-gray-100 dark:bg-gray-800 rounded-full mt-1.5 overflow-hidden">
+              <div className="w-28 h-2 bg-gray-200 dark:bg-gray-800 rounded-full mt-1.5 overflow-hidden">
                 <div
                   className="h-full bg-emerald-500 rounded-full transition-all duration-300"
-                  style={{ width: `${total ? (completed / total) * 100 : 0}%` }}
+                  style={{ width: `${total ? (doneCount / total) * 100 : 0}%` }}
                 ></div>
               </div>
             </div>
@@ -447,26 +486,26 @@
 
           <div className="space-y-3">
             {checklist.map((step, idx) => {
-              const isChecked = checkedMap[idx] || false;
+              const isDone = checked[idx] || false;
               return (
                 <div
                   key={idx}
-                  onClick={() => toggleCheck(idx)}
+                  onClick={() => toggle(idx)}
                   className={`p-4 rounded-2xl border transition-all cursor-pointer select-none flex items-start gap-3.5 ${
-                    isChecked
-                      ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40'
-                      : 'bg-gray-50/60 dark:bg-tactile-darksurface/40 border-gray-200/80 dark:border-gray-800 hover:border-gray-400'
+                    isDone
+                      ? 'bg-emerald-50/70 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-800'
+                      : 'bg-[#F8F9FC] dark:bg-tactile-darksurface border-black/[0.04] dark:border-white/5 hover:border-gray-400'
                   }`}
                 >
                   <input
                     type="checkbox"
-                    checked={isChecked}
+                    checked={isDone}
                     onChange={() => {}}
-                    className="mt-1 w-5 h-5 rounded-md text-emerald-600 focus:ring-0 cursor-pointer"
+                    className="mt-1 w-5 h-5 rounded-md text-emerald-600 cursor-pointer"
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className={`text-sm font-bold ${isChecked ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white'}`}>
+                      <span className={`text-sm font-bold ${isDone ? 'line-through text-gray-400' : 'text-gray-900 dark:text-white'}`}>
                         {step.step_title}
                       </span>
                       {step.is_mandatory && (
@@ -475,10 +514,10 @@
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
-                      <strong className="text-gray-800 dark:text-gray-200">Why it matters:</strong> {step.why_it_matters}
+                    <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">
+                      <strong className="text-gray-800 dark:text-gray-100">Why it matters:</strong> {step.why_it_matters}
                     </p>
-                    <div className="mt-2.5 text-xs font-mono bg-white dark:bg-tactile-darkbg p-2.5 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200">
+                    <div className="mt-2.5 text-xs font-mono bg-white dark:bg-[#131418] p-2.5 rounded-xl border border-black/[0.06] dark:border-white/5 text-gray-800 dark:text-gray-200">
                       👉 {step.action_url_or_instruction}
                     </div>
                   </div>
@@ -486,76 +525,70 @@
               );
             })}
           </div>
-
-          {isAllDone && (
-            <div className="mt-4 p-3.5 bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 rounded-2xl text-xs font-bold text-center border border-emerald-200">
-              ✓ All pre-action verification checks completed. Safe to proceed according to guidance instructions!
-            </div>
-          )}
         </div>
       );
     }
 
     // =========================================================================
-    // 4. Community Victim Network & External Go-To Portals Hub
+    // 5. Community Victim Feed & External Go-To Portals
     // =========================================================================
-    function CommunityVictimAndExternalHub({ communityData, externalPortals }) {
+    function CommunityVictimHub({ communityData, externalPortals }) {
       const [showModal, setShowModal] = useState(false);
-      const [formData, setFormData] = useState({ org: '', amount: '', contact: '', desc: '' });
-      const [statusMsg, setStatusMsg] = useState(null);
+      const [form, setForm] = useState({ org: '', amount: '', contact: '', desc: '' });
+      const [msg, setMsg] = useState(null);
 
-      const handleReportSubmit = async (e) => {
+      const submitReport = async (e) => {
         e.preventDefault();
         try {
           const res = await fetch(`${API_BASE}/community/report`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              incident_title: `Victim report: ${formData.org}`,
-              claimed_organization: formData.org,
+              incident_title: `Report: ${form.org}`,
+              claimed_organization: form.org,
               scam_type: 'Campus Hiring Fraud',
-              amount_demanded_or_lost_inr: parseFloat(formData.amount) || 0,
-              scammer_contacts: [formData.contact],
+              amount_demanded_or_lost_inr: parseFloat(form.amount) || 0,
+              scammer_contacts: [form.contact],
               scammer_links: [],
-              description: formData.desc
+              description: form.desc
             })
           });
           const d = await res.json();
-          setStatusMsg(d.message);
+          setMsg(d.message);
           setTimeout(() => {
             setShowModal(false);
-            setStatusMsg(null);
-            setFormData({ org: '', amount: '', contact: '', desc: '' });
+            setMsg(null);
+            setForm({ org: '', amount: '', contact: '', desc: '' });
           }, 2000);
         } catch (err) {
-          alert('Error: ' + err.message);
+          alert(err.message);
         }
       };
 
       return (
         <div className="space-y-6">
-          {/* Top Metric Strip (Workflow Style from Image 1) */}
+          {/* Top 3 Metric Strip */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-5 bg-white dark:bg-tactile-darkcard rounded-3xl shadow-tactile border border-tactile-border dark:border-tactile-darkborder">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Campus Financial Losses Reported</span>
+            <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl shadow-tactile-card border border-white/60 dark:border-white/5">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Campus Financial Losses</span>
               <div className="text-3xl font-extrabold text-red-600 dark:text-red-400 mt-1 font-mono">
                 ₹{(communityData?.total_reported_money_lost_inr || 49000).toLocaleString('en-IN')}
               </div>
-              <p className="text-xs text-gray-500 mt-1">Direct monetary extortion logged by verified college students.</p>
+              <p className="text-xs text-gray-500 mt-1">Direct student monetary extortion reported across colleges.</p>
             </div>
 
-            <div className="p-5 bg-white dark:bg-tactile-darkcard rounded-3xl shadow-tactile border border-tactile-border dark:border-tactile-darkborder">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Confirmed Student Reports</span>
+            <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl shadow-tactile-card border border-white/60 dark:border-white/5">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Victim Reports Verified</span>
               <div className="text-3xl font-extrabold text-gray-900 dark:text-white mt-1 font-mono">
                 {communityData?.internal_victim_reports_count || 14} Incidents
               </div>
-              <p className="text-xs text-gray-500 mt-1">Cross-referenced against college placement cells and UPI networks.</p>
+              <p className="text-xs text-gray-500 mt-1">Cross-referenced against college placement cells.</p>
             </div>
 
-            <div className="p-5 bg-tactile-charcoal text-white rounded-3xl shadow-tactile-heavy flex flex-col justify-between">
+            <div className="p-5 bg-tactile-obsidian text-white rounded-3xl shadow-keycap flex flex-col justify-between">
               <div>
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Campus Defense Syndicate</span>
-                <h4 className="text-base font-bold mt-1">Were you asked for a deposit?</h4>
+                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Community Defense Network</span>
+                <h4 className="text-base font-bold mt-1">Targeted by a recruiter?</h4>
                 <p className="text-xs text-gray-300 mt-0.5">Submit proof anonymously to protect subsequent placement batches.</p>
               </div>
               <button
@@ -567,43 +600,39 @@
             </div>
           </div>
 
-          {/* External Go-To Scam Reporting Websites Directory */}
-          <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-6 shadow-tactile border border-tactile-border dark:border-tactile-darkborder">
-            <div className="flex items-center justify-between mb-4">
+          {/* External Go-To Portals */}
+          <div className="bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] p-6 shadow-tactile-card border border-white/60 dark:border-white/5">
+            <div className="flex items-center gap-2 mb-4">
+              <span className="p-2 rounded-2xl bg-tactile-obsidian text-white shadow-keycap">
+                <Icons.External />
+              </span>
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="p-1.5 rounded-xl bg-tactile-charcoal text-white dark:bg-white dark:text-black shadow-tactile-pill">
-                    <Icons.External />
-                  </span>
-                  <h3 className="text-base font-extrabold text-gray-900 dark:text-white">
-                    External "Go-To" Scam Reporting Websites & Law Enforcement Portals
-                  </h3>
-                </div>
-                <p className="text-xs text-gray-500 mt-1">
-                  Official reporting gateways to officially report fraud, freeze scammer UPI accounts, and log cyber complaints.
-                </p>
+                <h3 className="text-base font-extrabold text-gray-900 dark:text-white">
+                  External "Go-To" Scam Reporting Gateways
+                </h3>
+                <p className="text-xs text-gray-500">Official government reporting and public anti-scam communities.</p>
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {(externalPortals || []).map((portal, idx) => (
-                <div key={idx} className="p-4 rounded-2xl bg-[#FAFAFC] dark:bg-tactile-darksurface border border-gray-200 dark:border-gray-800 flex flex-col justify-between">
+                <div key={idx} className="p-4 rounded-2xl bg-[#F8F9FC] dark:bg-tactile-darksurface border border-black/[0.04] dark:border-white/5 flex flex-col justify-between">
                   <div>
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-bold text-gray-900 dark:text-white">{portal.portal_name}</h4>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-mono">
-                        GO-TO PORTAL
+                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-mono">
+                        OFFICIAL
                       </span>
                     </div>
                     <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">{portal.external_report_summary}</p>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                  <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/5 flex items-center justify-between">
                     <span className="text-[11px] font-mono text-gray-400 truncate max-w-[200px]">{portal.portal_url}</span>
                     <a
                       href={portal.direct_report_submission_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3.5 py-1.5 rounded-full bg-tactile-charcoal text-white dark:bg-white dark:text-black text-xs font-bold hover:opacity-90 transition flex items-center gap-1 shadow-tactile-pill"
+                      className="px-3.5 py-1.5 rounded-full bg-tactile-obsidian text-white dark:bg-white dark:text-black text-xs font-bold shadow-keycap flex items-center gap-1"
                     >
                       File Report Directly <Icons.External />
                     </a>
@@ -613,14 +642,14 @@
             </div>
           </div>
 
-          {/* Anonymized Campus Evidence Statements */}
-          <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-6 shadow-tactile border border-tactile-border dark:border-tactile-darkborder">
+          {/* Campus Evidence Statements */}
+          <div className="bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] p-6 shadow-tactile-card border border-white/60 dark:border-white/5">
             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Live Campus Evidence Ticker</h4>
             <div className="space-y-2.5">
-              {(communityData?.victim_evidence_summaries || []).map((evidence, idx) => (
-                <div key={idx} className="p-3.5 rounded-2xl bg-gray-50 dark:bg-tactile-darksurface border border-gray-100 dark:border-gray-800 text-xs text-gray-700 dark:text-gray-300 flex items-start gap-3">
+              {(communityData?.victim_evidence_summaries || []).map((ev, idx) => (
+                <div key={idx} className="p-3.5 rounded-2xl bg-[#F8F9FC] dark:bg-tactile-darksurface border border-black/[0.04] dark:border-white/5 text-xs text-gray-700 dark:text-gray-300 flex items-start gap-3">
                   <span className="text-amber-500 font-bold text-base">⚠️</span>
-                  <span className="leading-relaxed font-medium">"{evidence}"</span>
+                  <span className="leading-relaxed font-medium">"{ev}"</span>
                 </div>
               ))}
             </div>
@@ -629,24 +658,24 @@
           {/* Modal */}
           {showModal && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-              <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-6 max-w-md w-full shadow-2xl border border-gray-200 dark:border-gray-800">
+              <div className="bg-white dark:bg-tactile-darkcard rounded-[32px] p-6 max-w-md w-full shadow-2xl border border-black/[0.06] dark:border-white/10">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-base font-bold text-gray-900 dark:text-white">Submit Anonymous Scam Report</h3>
                   <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
                 </div>
-                {statusMsg ? (
+                {msg ? (
                   <div className="p-4 bg-emerald-50 text-emerald-800 rounded-2xl text-center text-sm font-bold">
-                    ✓ {statusMsg}
+                    ✓ {msg}
                   </div>
                 ) : (
-                  <form onSubmit={handleReportSubmit} className="space-y-3">
+                  <form onSubmit={submitReport} className="space-y-3">
                     <div>
-                      <label className="text-xs font-bold text-gray-600 dark:text-gray-400">Claimed Organization / Entity</label>
+                      <label className="text-xs font-bold text-gray-600 dark:text-gray-400">Claimed Organization</label>
                       <input
                         type="text"
                         required
-                        value={formData.org}
-                        onChange={e => setFormData({ ...formData, org: e.target.value })}
+                        value={form.org}
+                        onChange={e => setForm({ ...form, org: e.target.value })}
                         placeholder="e.g. TCS Impersonation, Infosys Off-Campus"
                         className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs text-gray-900 dark:text-white"
                       />
@@ -655,8 +684,8 @@
                       <label className="text-xs font-bold text-gray-600 dark:text-gray-400">Amount Demanded or Lost (INR)</label>
                       <input
                         type="number"
-                        value={formData.amount}
-                        onChange={e => setFormData({ ...formData, amount: e.target.value })}
+                        value={form.amount}
+                        onChange={e => setForm({ ...form, amount: e.target.value })}
                         placeholder="e.g. 3500"
                         className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs text-gray-900 dark:text-white"
                       />
@@ -665,28 +694,28 @@
                       <label className="text-xs font-bold text-gray-600 dark:text-gray-400">Scammer Phone / UPI / Telegram Handle</label>
                       <input
                         type="text"
-                        value={formData.contact}
-                        onChange={e => setFormData({ ...formData, contact: e.target.value })}
-                        placeholder="e.g. recruiter@oksbi, @TelegramJobOffer"
+                        value={form.contact}
+                        onChange={e => setForm({ ...form, contact: e.target.value })}
+                        placeholder="e.g. recruiter@oksbi, +919876543210"
                         className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs text-gray-900 dark:text-white"
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-bold text-gray-600 dark:text-gray-400">Description of Scam Modus Operandi</label>
+                      <label className="text-xs font-bold text-gray-600 dark:text-gray-400">Brief Description</label>
                       <textarea
                         rows="3"
                         required
-                        value={formData.desc}
-                        onChange={e => setFormData({ ...formData, desc: e.target.value })}
-                        placeholder="Describe how they contacted you and what proof was given..."
+                        value={form.desc}
+                        onChange={e => setForm({ ...form, desc: e.target.value })}
+                        placeholder="Explain what happened..."
                         className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs text-gray-900 dark:text-white"
                       ></textarea>
                     </div>
                     <button
                       type="submit"
-                      className="w-full py-2.5 rounded-full bg-tactile-charcoal text-white dark:bg-white dark:text-black font-bold text-xs hover:opacity-90 shadow-tactile-pill"
+                      className="w-full py-2.5 rounded-full bg-tactile-obsidian text-white dark:bg-white dark:text-black font-bold text-xs hover:opacity-90 shadow-keycap"
                     >
-                      Publish Anonymous Warning to Network →
+                      Publish Anonymous Warning →
                     </button>
                   </form>
                 )}
@@ -698,63 +727,39 @@
     }
 
     // =========================================================================
-    // 5. Main Application Orchestrator
+    // 6. Main App Component
     // =========================================================================
     function App() {
-      const [currentView, setCurrentView] = useState('scan'); // 'scan', 'network', 'community', 'bots'
-      const [scanMode, setScanMode] = useState('text'); // 'text', 'ocr', 'url', 'github'
+      const [view, setView] = useState('scan'); // 'scan', 'network', 'community', 'bots'
+      const [mode, setMode] = useState('text'); // 'text', 'ocr', 'url', 'github'
       
-      const [inputText, setInputText] = useState('');
-      const [inputUrl, setInputUrl] = useState('');
-      const [inputGithub, setInputGithub] = useState('');
-      const [screenshotBase64, setScreenshotBase64] = useState(null);
+      const [text, setText] = useState('');
+      const [url, setUrl] = useState('');
+      const [github, setGithub] = useState('');
+      const [b64, setB64] = useState(null);
 
-      const [isLoading, setIsLoading] = useState(false);
-      const [threatRecord, setThreatRecord] = useState(null);
-      const [graphData, setGraphData] = useState(null);
-      const [communityData, setCommunityData] = useState(null);
-      const [externalPortals, setExternalPortals] = useState([]);
-      const [darkMode, setDarkMode] = useState(false);
+      const [loading, setLoading] = useState(false);
+      const [threat, setThreat] = useState(null);
+      const [graph, setGraph] = useState(null);
+      const [comm, setComm] = useState(null);
+      const [portals, setPortals] = useState([]);
+      const [dark, setDark] = useState(false);
 
       useEffect(() => {
-        // Initial data sync
-        fetch(`${API_BASE}/analyzer/mock`)
-          .then(r => r.json())
-          .then(d => setThreatRecord(d))
-          .catch(() => {});
-
-        fetch(`${API_BASE}/correlator/mock`)
-          .then(r => r.json())
-          .then(d => setGraphData(d))
-          .catch(() => {});
-
-        fetch(`${API_BASE}/community/mock`)
-          .then(r => r.json())
-          .then(d => setCommunityData(d))
-          .catch(() => {});
-
-        fetch(`${API_BASE}/community/external-portals`)
-          .then(r => r.json())
-          .then(d => setExternalPortals(d))
-          .catch(() => {});
+        fetch(`${API_BASE}/analyzer/mock`).then(r => r.json()).then(d => setThreat(d)).catch(() => {});
+        fetch(`${API_BASE}/correlator/mock`).then(r => r.json()).then(d => setGraph(d)).catch(() => {});
+        fetch(`${API_BASE}/community/mock`).then(r => r.json()).then(d => setComm(d)).catch(() => {});
+        fetch(`${API_BASE}/community/external-portals`).then(r => r.json()).then(d => setPortals(d)).catch(() => {});
       }, []);
 
-      const handleFileUpload = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => setScreenshotBase64(event.target.result);
-        reader.readAsDataURL(file);
-      };
-
-      const handleScan = async () => {
-        setIsLoading(true);
+      const handleAnalyze = async () => {
+        setLoading(true);
         try {
           const payload = {
-            input_text: scanMode === 'text' ? inputText : null,
-            target_url: scanMode === 'url' ? inputUrl : null,
-            github_repo_url: scanMode === 'github' ? inputGithub : null,
-            screenshot_base64: scanMode === 'ocr' ? screenshotBase64 : null
+            input_text: mode === 'text' ? text : null,
+            target_url: mode === 'url' ? url : null,
+            github_repo_url: mode === 'github' ? github : null,
+            screenshot_base64: mode === 'ocr' ? b64 : null
           };
 
           const res = await fetch(`${API_BASE}/analyzer/analyze`, {
@@ -763,413 +768,431 @@
             body: JSON.stringify(payload)
           });
           const d = await res.json();
-          setThreatRecord(d);
+          setThreat(d);
 
-          // Trigger correlation
           const cRes = await fetch(`${API_BASE}/correlator/correlate`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ incident_id: d.incident_id, extracted_indicators: d.extracted_indicators })
           });
           const cData = await cRes.json();
-          setGraphData(cData);
-        } catch (err) {
-          alert('Scan failed: ' + err.message);
+          setGraph(cData);
+        } catch (e) {
+          alert(e.message);
         } finally {
-          setIsLoading(false);
+          setLoading(false);
         }
       };
 
       const loadDemo = (type) => {
-        if (type === 'tcs_scam') {
-          setScanMode('text');
-          setInputText("Congratulations! Direct selection at Tata Consultancy Services without technical interview. To dispatch your corporate laptop and access card, kindly transfer refundable caution deposit of Rs. 3,500 to UPI ID tcs.hrverification@oksbi within 24 hours at bit.ly/tcs-deposit");
-        } else if (type === 'github_backdoor') {
-          setScanMode('github');
-          setInputGithub("https://github.com/tcs-assessment-portal/coding-round-2026");
-        } else if (type === 'legit_interview') {
-          setScanMode('text');
-          setInputText("Dear Candidate, Your technical round for Software Engineer at Microsoft is scheduled for Tuesday at 10:00 AM IST via Teams. Please note Microsoft never requests fees or deposits during recruitment.");
+        if (type === 'tcs') {
+          setMode('text');
+          setText("Congratulations! Direct selection at Tata Consultancy Services without technical interview. To dispatch your corporate laptop and access card, kindly transfer refundable caution deposit of Rs. 3,500 to UPI ID tcs.hrverification@oksbi within 24 hours at bit.ly/tcs-deposit");
+        } else if (type === 'github') {
+          setMode('github');
+          setGithub("https://github.com/tcs-assessment-portal/coding-round-2026");
+        } else if (type === 'legit') {
+          setMode('text');
+          setText("Dear Candidate, Your technical interview for Software Engineer at Microsoft is scheduled for Tuesday at 10:00 AM IST via Teams. Please note Microsoft never requests fees or deposits during recruitment.");
         }
       };
 
       return (
-        <div className={darkMode ? 'dark' : ''}>
-          <div className="min-h-screen bg-tactile-bg dark:bg-tactile-darkbg text-tactile-charcoal dark:text-gray-100 flex flex-col">
+        <div className={dark ? 'dark' : ''}>
+          <div className="min-h-screen bg-tactile-canvas dark:bg-tactile-darkcanvas text-tactile-obsidian dark:text-gray-100 flex">
             
-            {/* Top Workspace Header (Workflow & iDraft style) */}
-            <header className="border-b border-tactile-border dark:border-tactile-darkborder bg-white/80 dark:bg-tactile-darkcard/80 backdrop-blur sticky top-0 z-40">
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-                
-                {/* Brand */}
+            {/* Left Floating Squircle Dock (Images 1, 2, 4 & Mockup) */}
+            <aside className="w-20 hidden md:flex flex-col items-center py-6 px-3 border-r border-black/[0.06] dark:border-white/5 bg-tactile-card dark:bg-tactile-darkcard shrink-0">
+              <div className="w-11 h-11 rounded-2xl bg-tactile-obsidian dark:bg-white text-white dark:text-black flex items-center justify-center font-black text-xl shadow-keycap mb-8">
+                F
+              </div>
+
+              <div className="flex flex-col gap-3 w-full items-center flex-1">
+                {[
+                  { id: 'scan', icon: Icons.Shield, label: 'Scanner' },
+                  { id: 'network', icon: Icons.TopoGraph, label: '3D Graph' },
+                  { id: 'community', icon: Icons.Community, label: 'Community' },
+                  { id: 'bots', icon: Icons.Bot, label: 'Bots' }
+                ].map(item => {
+                  const Icon = item.icon;
+                  const isActive = view === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setView(item.id)}
+                      title={item.label}
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
+                        isActive
+                          ? 'bg-tactile-obsidian text-white dark:bg-white dark:text-black shadow-keycap'
+                          : 'text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                      }`}
+                    >
+                      <Icon />
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => setDark(!dark)}
+                className="w-11 h-11 rounded-2xl border border-black/[0.08] dark:border-white/10 flex items-center justify-center text-xs font-bold hover:bg-black/5 dark:hover:bg-white/5"
+              >
+                {dark ? '☀️' : '🌙'}
+              </button>
+            </aside>
+
+            {/* Main Application Content */}
+            <div className="flex-1 flex flex-col min-w-0">
+              
+              {/* Top Navigation Bar */}
+              <header className="h-16 border-b border-black/[0.06] dark:border-white/5 bg-tactile-card/80 dark:bg-tactile-darkcard/80 backdrop-blur px-6 flex items-center justify-between sticky top-0 z-40">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-2xl bg-tactile-charcoal dark:bg-white text-white dark:text-black flex items-center justify-center font-extrabold text-base shadow-tactile-pill">
-                    F
-                  </div>
+                  <div className="md:hidden w-8 h-8 rounded-xl bg-tactile-obsidian text-white flex items-center justify-center font-bold">F</div>
                   <div>
-                    <span className="font-extrabold text-lg tracking-tight">Factora</span>
-                    <span className="text-[10px] font-bold font-mono ml-2 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400">
-                      SAFETY TECH v1.0
-                    </span>
+                    <h2 className="text-base font-extrabold tracking-tight">Factora Threat Defense</h2>
+                    <span className="text-[10px] font-mono font-bold text-gray-400">PROBLEM 1: SAFETY TECH (FAKE OR REAL)</span>
                   </div>
                 </div>
 
-                {/* Center Dock Pills */}
-                <nav className="flex items-center gap-1 p-1 bg-gray-100 dark:bg-tactile-darksurface rounded-full border border-gray-200 dark:border-gray-800 text-xs font-bold">
-                  {[
-                    { id: 'scan', label: 'Threat Analyzer', icon: Icons.Shield },
-                    { id: 'network', label: '3D Topo Graph', icon: Icons.Graph },
-                    { id: 'community', label: 'Community Hub', icon: Icons.Users },
-                    { id: 'bots', label: 'Bots & Extensions', icon: Icons.Bot }
-                  ].map(tab => {
-                    const IconComp = tab.icon;
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => setCurrentView(tab.id)}
-                        className={`px-3.5 py-1.5 rounded-full transition flex items-center gap-1.5 ${
-                          currentView === tab.id
-                            ? 'bg-tactile-charcoal text-white dark:bg-white dark:text-black shadow-tactile-pill'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white'
-                        }`}
-                      >
-                        <IconComp />
-                        {tab.label}
-                      </button>
-                    );
-                  })}
-                </nav>
-
-                {/* Right utility buttons */}
+                {/* Right Utility Buttons */}
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setDarkMode(!darkMode)}
-                    className="p-2 rounded-xl border border-gray-200 dark:border-gray-800 text-xs font-bold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
-                  >
-                    {darkMode ? '☀️ Light' : '🌙 Dark'}
-                  </button>
+                  <div className="hidden sm:flex items-center gap-2 mr-3 px-3 py-1 rounded-full bg-black/5 dark:bg-white/5 text-xs font-bold">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    ML Engine Active (ROC-AUC 0.987)
+                  </div>
                   <a
                     href="https://cybercrime.gov.in"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="hidden sm:inline-flex px-3.5 py-1.5 rounded-full bg-red-600 text-white text-xs font-bold hover:bg-red-700 shadow-tactile-pill items-center gap-1"
+                    className="px-4 py-1.5 rounded-full bg-red-600 text-white text-xs font-extrabold shadow-keycap hover:bg-red-700 flex items-center gap-1.5"
                   >
-                    Helpline 1930
+                    CyberCrime Helpline 1930
                   </a>
                 </div>
-              </div>
-            </header>
+              </header>
 
-            {/* Main Content Viewport */}
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
-              
-              {/* Stat Metrics Bar (from Reference Image 1 "workflow") */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 bg-tactile-charcoal text-white rounded-3xl shadow-tactile-heavy flex flex-col justify-between">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[11px] font-bold text-gray-400 uppercase">Analyzed Threats</span>
-                    <span className="p-1 rounded-full bg-white/10 text-white"><Icons.ArrowUpRight /></span>
+              {/* Viewport */}
+              <main className="p-6 md:p-8 max-w-7xl mx-auto w-full space-y-6">
+                
+                {/* Top 4 Hardware Stat Tiles (Image 1 "Workflow" Style) */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Single Dominant Dark Anchor Card */}
+                  <div className="p-5 bg-tactile-obsidian text-white rounded-[32px] shadow-keycap flex flex-col justify-between">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Threats Indexed</span>
+                      <span className="p-1 rounded-full bg-white/10 text-white"><Icons.ArrowUpRight /></span>
+                    </div>
+                    <div className="text-4xl font-extrabold font-mono mt-3">32</div>
+                    <span className="text-[11px] text-emerald-400 font-bold mt-1 font-mono">↗ +14% this week</span>
                   </div>
-                  <div className="text-3xl font-extrabold font-mono mt-3">32</div>
-                  <span className="text-[10px] text-emerald-400 font-bold mt-1 font-mono">↑ 14% this week</span>
+
+                  <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] shadow-tactile-card border border-white/60 dark:border-white/5 flex flex-col justify-between">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Campus Losses Prevented</span>
+                      <span className="p-1 rounded-full bg-red-100 text-red-600 dark:bg-red-950"><Icons.ArrowUpRight /></span>
+                    </div>
+                    <div className="text-4xl font-extrabold text-red-600 dark:text-red-400 font-mono mt-3">₹49,000</div>
+                    <span className="text-[11px] text-gray-500 font-bold mt-1">14 Student reports</span>
+                  </div>
+
+                  <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] shadow-tactile-card border border-white/60 dark:border-white/5 flex flex-col justify-between">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Recurring Syndicates</span>
+                      <span className="p-1 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-950"><Icons.ArrowUpRight /></span>
+                    </div>
+                    <div className="text-4xl font-extrabold text-gray-900 dark:text-white font-mono mt-3">4 Rings</div>
+                    <span className="text-[11px] text-amber-600 dark:text-amber-400 font-bold mt-1">GhostRecruiter #4</span>
+                  </div>
+
+                  <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] shadow-tactile-card border border-white/60 dark:border-white/5 flex flex-col justify-between">
+                    <div className="flex justify-between items-center">
+                      <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">ML Precision Rate</span>
+                      <span className="p-1 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950"><Icons.Check /></span>
+                    </div>
+                    <div className="text-4xl font-extrabold text-gray-900 dark:text-white font-mono mt-3">97.8%</div>
+                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold mt-1 font-mono">Calibrated XGBoost</span>
+                  </div>
                 </div>
 
-                <div className="p-4 bg-white dark:bg-tactile-darkcard rounded-3xl shadow-tactile border border-tactile-border dark:border-tactile-darkborder flex flex-col justify-between">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[11px] font-bold text-gray-400 uppercase">Reported Losses</span>
-                    <span className="p-1 rounded-full bg-red-100 text-red-600 dark:bg-red-950"><Icons.ArrowUpRight /></span>
-                  </div>
-                  <div className="text-3xl font-extrabold text-red-600 dark:text-red-400 font-mono mt-3">₹49,000</div>
-                  <span className="text-[10px] text-gray-500 font-bold mt-1">14 Student victims</span>
-                </div>
+                {/* VIEW 1: Threat Intake & Assessment */}
+                {view === 'scan' && (
+                  <div className="space-y-6">
+                    {/* Intake Card */}
+                    <div className="bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] p-6 shadow-tactile-card border border-white/60 dark:border-white/5">
+                      <div className="flex flex-wrap items-center justify-between border-b border-black/[0.06] dark:border-white/5 pb-4 mb-4 gap-2">
+                        <div className="flex items-center gap-1.5 p-1 bg-black/5 dark:bg-white/5 rounded-full border border-black/[0.04] dark:border-white/5 text-xs font-bold">
+                          {[
+                            { id: 'text', label: 'Offer Text / Email / SMS' },
+                            { id: 'ocr', label: 'Upload Screenshot (OCR)' },
+                            { id: 'url', label: 'Inspect URL' },
+                            { id: 'github', label: 'Audit GitHub Repo' }
+                          ].map(t => (
+                            <button
+                              key={t.id}
+                              onClick={() => setMode(t.id)}
+                              className={`px-3.5 py-1.5 rounded-full transition ${
+                                mode === t.id
+                                  ? 'bg-tactile-obsidian text-white dark:bg-white dark:text-black shadow-keycap'
+                                  : 'text-gray-500 hover:text-black dark:hover:text-white'
+                              }`}
+                            >
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
 
-                <div className="p-4 bg-white dark:bg-tactile-darkcard rounded-3xl shadow-tactile border border-tactile-border dark:border-tactile-darkborder flex flex-col justify-between">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[11px] font-bold text-gray-400 uppercase">Active Syndicates</span>
-                    <span className="p-1 rounded-full bg-amber-100 text-amber-600 dark:bg-amber-950"><Icons.ArrowUpRight /></span>
-                  </div>
-                  <div className="text-3xl font-extrabold text-gray-900 dark:text-white font-mono mt-3">4 Rings</div>
-                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold mt-1">GhostRecruiter #4</span>
-                </div>
-
-                <div className="p-4 bg-white dark:bg-tactile-darkcard rounded-3xl shadow-tactile border border-tactile-border dark:border-tactile-darkborder flex flex-col justify-between">
-                  <div className="flex justify-between items-center">
-                    <span className="text-[11px] font-bold text-gray-400 uppercase">Accuracy Rate</span>
-                    <span className="p-1 rounded-full bg-emerald-100 text-emerald-600 dark:bg-emerald-950"><Icons.Check /></span>
-                  </div>
-                  <div className="text-3xl font-extrabold text-gray-900 dark:text-white font-mono mt-3">97.8%</div>
-                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold mt-1 font-mono">ROC-AUC 0.987</span>
-                </div>
-              </div>
-
-              {/* View 1: Main Scanner & Verification Dashboard */}
-              {currentView === 'scan' && (
-                <div className="space-y-8">
-                  
-                  {/* Intake Module */}
-                  <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-6 shadow-tactile-heavy border border-tactile-border dark:border-tactile-darkborder">
-                    <div className="flex flex-wrap items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-4 mb-4 gap-2">
-                      <div className="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-tactile-darksurface rounded-full border border-gray-200 dark:border-gray-800 text-xs font-bold">
-                        {[
-                          { id: 'text', label: 'Message / Offer Text' },
-                          { id: 'ocr', label: 'Offer Screenshot (OCR)' },
-                          { id: 'url', label: 'Inspect URL' },
-                          { id: 'github', label: 'Audit GitHub Repo' }
-                        ].map(t => (
-                          <button
-                            key={t.id}
-                            onClick={() => setScanMode(t.id)}
-                            className={`px-3 py-1.5 rounded-full transition ${
-                              scanMode === t.id
-                                ? 'bg-tactile-charcoal text-white dark:bg-white dark:text-black shadow-tactile-pill'
-                                : 'text-gray-600 dark:text-gray-400'
-                            }`}
-                          >
-                            {t.label}
+                        {/* Demo Pills */}
+                        <div className="flex items-center gap-1.5 text-xs">
+                          <span className="text-gray-400 font-bold mr-1">One-Click Demos:</span>
+                          <button onClick={() => loadDemo('tcs')} className="px-3 py-1 rounded-xl bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300 font-bold hover:bg-red-200">
+                            TCS ₹3500 Scam
                           </button>
-                        ))}
-                      </div>
-
-                      <div className="flex items-center gap-1 text-xs">
-                        <span className="text-gray-400 font-bold mr-1">Pre-loaded Demos:</span>
-                        <button onClick={() => loadDemo('tcs_scam')} className="px-2.5 py-1 rounded-xl bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-300 font-bold hover:bg-red-100">
-                          TCS ₹3500 Scam
-                        </button>
-                        <button onClick={() => loadDemo('github_backdoor')} className="px-2.5 py-1 rounded-xl bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 font-bold hover:bg-amber-100">
-                          GitHub Malware
-                        </button>
-                        <button onClick={() => loadDemo('legit_interview')} className="px-2.5 py-1 rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 font-bold hover:bg-emerald-100">
-                          Microsoft Legit
-                        </button>
-                      </div>
-                    </div>
-
-                    {scanMode === 'text' && (
-                      <textarea
-                        rows="4"
-                        value={inputText}
-                        onChange={e => setInputText(e.target.value)}
-                        placeholder="Paste offer letter email, WhatsApp message, Telegram task description, or college recruitment notice..."
-                        className="w-full p-4 rounded-2xl bg-[#FAFAFC] dark:bg-tactile-darkbg border border-gray-200 dark:border-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-tactile-charcoal dark:focus:ring-white"
-                      ></textarea>
-                    )}
-
-                    {scanMode === 'ocr' && (
-                      <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl text-center flex flex-col items-center justify-center bg-[#FAFAFC] dark:bg-tactile-darkbg">
-                        <input type="file" accept="image/*" onChange={handleFileUpload} className="hidden" id="ocr-in" />
-                        <label htmlFor="ocr-in" className="cursor-pointer flex flex-col items-center">
-                          <span className="text-3xl mb-2">📸</span>
-                          <span className="text-sm font-bold text-gray-900 dark:text-white">Upload Offer Letter or WhatsApp Screenshot</span>
-                          <span className="text-xs text-gray-400 mt-1">Automatic OCR & Vision analysis for stamps, headers, and UPI handles</span>
-                        </label>
-                        {screenshotBase64 && (
-                          <div className="mt-3 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-xl font-mono">
-                            ✓ Screenshot Loaded & Decoded
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {scanMode === 'url' && (
-                      <input
-                        type="url"
-                        value={inputUrl}
-                        onChange={e => setInputUrl(e.target.value)}
-                        placeholder="e.g. bit.ly shortener, unregistered portal, or fake scholarship domain..."
-                        className="w-full p-4 rounded-2xl bg-[#FAFAFC] dark:bg-tactile-darkbg border border-gray-200 dark:border-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-tactile-charcoal dark:focus:ring-white"
-                      />
-                    )}
-
-                    {scanMode === 'github' && (
-                      <input
-                        type="url"
-                        value={inputGithub}
-                        onChange={e => setInputGithub(e.target.value)}
-                        placeholder="e.g. https://github.com/recruiter-candidate-test/react-assessment..."
-                        className="w-full p-4 rounded-2xl bg-[#FAFAFC] dark:bg-tactile-darkbg border border-gray-200 dark:border-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-tactile-charcoal dark:focus:ring-white"
-                      />
-                    )}
-
-                    <div className="mt-4 flex justify-end">
-                      <button
-                        onClick={handleScan}
-                        disabled={isLoading}
-                        className="px-6 py-3 rounded-full bg-tactile-charcoal text-white dark:bg-white dark:text-black font-extrabold text-xs hover:opacity-90 transition shadow-tactile-pill flex items-center gap-2"
-                      >
-                        {isLoading ? 'Running ML & OSINT Forensics...' : 'Analyze Threat Signals →'}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Threat Analysis Output Section */}
-                  {threatRecord && (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      
-                      {/* Left: Tactile Speedometer Gauge + PRIME Criteria Matrix */}
-                      <div className="space-y-6">
-                        <TactileGauge
-                          score={threatRecord.fuzzy_risk_score}
-                          tier={threatRecord.risk_tier}
-                        />
-
-                        {/* P.R.I.M.E. Criteria Bar Breakdown */}
-                        <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-6 shadow-tactile border border-tactile-border dark:border-tactile-darkborder">
-                          <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-4">P.R.I.M.E. 6-Factor Assessment</h4>
-                          <div className="space-y-3.5">
-                            {[
-                              { label: 'P: Proof & Domain Identity', val: threatRecord.prime_criteria_scores?.proof_domain_identity },
-                              { label: 'R: Redirection & Obfuscation', val: threatRecord.prime_criteria_scores?.redirection_obfuscation },
-                              { label: 'I: Incentive & Urgency', val: threatRecord.prime_criteria_scores?.incentive_urgency },
-                              { label: 'M: Money & Transaction Ask', val: threatRecord.prime_criteria_scores?.money_transaction_ask },
-                              { label: 'E: Execution & Code Safety', val: threatRecord.prime_criteria_scores?.execution_code_safety },
-                              { label: 'S: Student Registry Check', val: threatRecord.prime_criteria_scores?.student_registry_check }
-                            ].map((c, i) => (
-                              <div key={i}>
-                                <div className="flex justify-between text-xs font-semibold mb-1">
-                                  <span className="text-gray-700 dark:text-gray-300">{c.label}</span>
-                                  <span className="font-mono font-bold">{c.val || 0} / 10</span>
-                                </div>
-                                <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full transition-all duration-500"
-                                    style={{
-                                      width: `${(c.val || 0) * 10}%`,
-                                      backgroundColor: (c.val || 0) > 7 ? '#EF4444' : ((c.val || 0) > 4 ? '#F59E0B' : '#10B981')
-                                    }}
-                                  ></div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                          <button onClick={() => loadDemo('github')} className="px-3 py-1 rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300 font-bold hover:bg-amber-200">
+                            GitHub Malware
+                          </button>
+                          <button onClick={() => loadDemo('legit')} className="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-bold hover:bg-emerald-200">
+                            Microsoft Legit
+                          </button>
                         </div>
                       </div>
 
-                      {/* Right: Evidence Red Flags + Interactive Verification Checklist */}
-                      <div className="lg:col-span-2 space-y-6">
+                      {mode === 'text' && (
+                        <textarea
+                          rows="4"
+                          value={text}
+                          onChange={e => setText(e.target.value)}
+                          placeholder="Paste offer letter email, WhatsApp message, Telegram task description, or college recruitment notice..."
+                          className="w-full p-4 rounded-2xl bg-[#F8F9FC] dark:bg-tactile-darkcanvas border border-black/[0.06] dark:border-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-tactile-obsidian dark:focus:ring-white"
+                        ></textarea>
+                      )}
+
+                      {mode === 'ocr' && (
+                        <div className="p-8 border-2 border-dashed border-black/[0.08] dark:border-white/10 rounded-2xl text-center flex flex-col items-center justify-center bg-[#F8F9FC] dark:bg-tactile-darkcanvas">
+                          <input type="file" accept="image/*" onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (!file) return;
+                            const r = new FileReader();
+                            r.onload = ev => setB64(ev.target.result);
+                            r.readAsDataURL(file);
+                          }} className="hidden" id="ocr-f" />
+                          <label htmlFor="ocr-f" className="cursor-pointer flex flex-col items-center">
+                            <span className="text-3xl mb-2">📸</span>
+                            <span className="text-sm font-bold text-gray-900 dark:text-white">Upload Offer Letter or WhatsApp Screenshot</span>
+                            <span className="text-xs text-gray-400 mt-1">Automatic OCR & Vision analysis for stamps, headers, and UPI handles</span>
+                          </label>
+                          {b64 && (
+                            <div className="mt-3 px-3 py-1.5 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl font-mono">
+                              ✓ Screenshot Decoded Ready for Inspection
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {mode === 'url' && (
+                        <input
+                          type="url"
+                          value={url}
+                          onChange={e => setUrl(e.target.value)}
+                          placeholder="e.g. bit.ly shortener, lookalike careers domain, or fake scholarship link..."
+                          className="w-full p-4 rounded-2xl bg-[#F8F9FC] dark:bg-tactile-darkcanvas border border-black/[0.06] dark:border-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-tactile-obsidian dark:focus:ring-white"
+                        />
+                      )}
+
+                      {mode === 'github' && (
+                        <input
+                          type="url"
+                          value={github}
+                          onChange={e => setGithub(e.target.value)}
+                          placeholder="e.g. https://github.com/recruiter-tests/react-candidate-2026..."
+                          className="w-full p-4 rounded-2xl bg-[#F8F9FC] dark:bg-tactile-darkcanvas border border-black/[0.06] dark:border-white/5 text-sm focus:outline-none focus:ring-2 focus:ring-tactile-obsidian dark:focus:ring-white"
+                        />
+                      )}
+
+                      <div className="mt-4 flex justify-end">
+                        <button
+                          onClick={handleAnalyze}
+                          disabled={loading}
+                          className="px-6 py-3 rounded-full bg-tactile-obsidian text-white dark:bg-white dark:text-black font-extrabold text-xs hover:opacity-90 transition shadow-keycap flex items-center gap-2"
+                        >
+                          {loading ? 'Evaluating Threat Signals...' : 'Run Neuro-Symbolic Threat Scan →'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Threat Analysis Output Section */}
+                    {threat && (
+                      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         
-                        {/* Evidence Findings Card */}
-                        <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-6 shadow-tactile border border-tactile-border dark:border-tactile-darkborder">
-                          <div className="flex items-center justify-between mb-3">
-                            <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                              <Icons.Alert />
-                              Forensic Evidence & Fraud Indicators
-                            </h3>
-                            <span className="text-xs font-mono font-bold text-gray-400">
-                              REF: {threatRecord.incident_id}
-                            </span>
-                          </div>
-                          <div className="space-y-2">
-                            {threatRecord.why_it_is_risky_summary?.map((evidence, idx) => (
-                              <div key={idx} className="p-3 bg-red-50/70 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-2xl text-xs text-red-900 dark:text-red-200 flex items-start gap-2.5">
-                                <span className="text-red-500 font-bold">•</span>
-                                <span className="leading-relaxed">{evidence}</span>
-                              </div>
-                            ))}
+                        {/* Column 1: Carved Tactile Speedometer Gauge + Stacked Profile Deck */}
+                        <div className="space-y-6">
+                          <CarvedTactileGauge
+                            score={threat.fuzzy_risk_score}
+                            tier={threat.risk_tier}
+                          />
+
+                          {/* Stacked Card Deck (Image 3 Style) */}
+                          <div className="bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] p-6 shadow-tactile-card border border-white/60 dark:border-white/5">
+                            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider block mb-2">Claimed Entity Deck</span>
+                            <StackedCardDeck
+                              claimedOrg={threat.extracted_indicators?.claimed_organization}
+                              domainMismatch={threat.extracted_indicators?.official_domain_mismatch}
+                              officialDomain="tcs.com"
+                            />
                           </div>
 
-                          {/* Triggered Student Scam Flags */}
-                          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-wrap gap-2">
-                            {threatRecord.extracted_indicators?.student_scam_flags && Object.entries(threatRecord.extracted_indicators.student_scam_flags).map(([k, v]) => (
-                              v ? (
-                                <span key={k} className="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-mono">
-                                  🚩 {k.replace(/_/g, ' ').toUpperCase()}
-                                </span>
-                              ) : null
-                            ))}
+                          {/* P.R.I.M.E. 6-Factor Assessment Bars */}
+                          <div className="bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] p-6 shadow-tactile-card border border-white/60 dark:border-white/5">
+                            <h4 className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-4">P.R.I.M.E. Criteria Matrix</h4>
+                            <div className="space-y-3.5">
+                              {[
+                                { label: 'P: Proof & Domain Identity', val: threat.prime_criteria_scores?.proof_domain_identity },
+                                { label: 'R: Redirection & Obfuscation', val: threat.prime_criteria_scores?.redirection_obfuscation },
+                                { label: 'I: Incentive & Urgency', val: threat.prime_criteria_scores?.incentive_urgency },
+                                { label: 'M: Money & Transaction Ask', val: threat.prime_criteria_scores?.money_transaction_ask },
+                                { label: 'E: Execution & Code Safety', val: threat.prime_criteria_scores?.execution_code_safety },
+                                { label: 'S: Student Registry Check', val: threat.prime_criteria_scores?.student_registry_check }
+                              ].map((c, i) => (
+                                <div key={i}>
+                                  <div className="flex justify-between text-xs font-semibold mb-1">
+                                    <span className="text-gray-700 dark:text-gray-300">{c.label}</span>
+                                    <span className="font-mono font-bold">{c.val || 0} / 10</span>
+                                  </div>
+                                  <div className="w-full h-2 bg-gray-200 dark:bg-gray-800 rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full rounded-full transition-all duration-500"
+                                      style={{
+                                        width: `${(c.val || 0) * 10}%`,
+                                        backgroundColor: (c.val || 0) > 7 ? '#EF4444' : ((c.val || 0) > 4 ? '#FF9500' : '#00E599')
+                                      }}
+                                    ></div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </div>
 
-                        {/* Mandatory Interactive Verification Checklist */}
-                        <VerificationChecklist
-                          checklist={threatRecord.verify_before_proceeding_checklist || []}
-                          incidentId={threatRecord.incident_id}
-                        />
+                        {/* Column 2 & 3: Evidence Bullets + Interactive Verification Checklist */}
+                        <div className="lg:col-span-2 space-y-6">
+                          
+                          {/* Evidence Findings Card */}
+                          <div className="bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] p-6 shadow-tactile-card border border-white/60 dark:border-white/5">
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                <Icons.Alert />
+                                Forensic Red Flags & Evidence Findings
+                              </h3>
+                              <span className="text-xs font-mono font-bold text-gray-400">
+                                INCIDENT: {threat.incident_id}
+                              </span>
+                            </div>
+                            <div className="space-y-2.5">
+                              {threat.why_it_is_risky_summary?.map((ev, idx) => (
+                                <div key={idx} className="p-3.5 bg-red-50/70 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-2xl text-xs text-red-900 dark:text-red-200 flex items-start gap-3">
+                                  <span className="text-red-500 font-bold">•</span>
+                                  <span className="leading-relaxed font-medium">{ev}</span>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Triggered Student Scam Flags */}
+                            <div className="mt-4 pt-4 border-t border-black/[0.06] dark:border-white/5 flex flex-wrap gap-2">
+                              {threat.extracted_indicators?.student_scam_flags && Object.entries(threat.extracted_indicators.student_scam_flags).map(([k, v]) => (
+                                v ? (
+                                  <span key={k} className="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 font-mono">
+                                    🚩 {k.replace(/_/g, ' ').toUpperCase()}
+                                  </span>
+                                ) : null
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Mandatory Verification Checklist */}
+                          <VerificationChecklist
+                            checklist={threat.verify_before_proceeding_checklist || []}
+                            incidentId={threat.incident_id}
+                          />
+
+                        </div>
 
                       </div>
+                    )}
+                  </div>
+                )}
 
+                {/* VIEW 2: 3D Topographic Threat Terrain Graph */}
+                {view === 'network' && (
+                  <TopographicEmberGraph graphData={graph} />
+                )}
+
+                {/* VIEW 3: Community Victim Hub */}
+                {view === 'community' && (
+                  <CommunityVictimHub communityData={comm} externalPortals={portals} />
+                )}
+
+                {/* VIEW 4: Bots & Accessibility */}
+                {view === 'bots' && (
+                  <div className="bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] p-8 shadow-tactile-card border border-white/60 dark:border-white/5 space-y-6">
+                    <div className="flex items-center gap-3">
+                      <span className="p-3 rounded-2xl bg-tactile-obsidian text-white shadow-keycap">
+                        <Icons.Bot />
+                      </span>
+                      <div>
+                        <h3 className="text-lg font-extrabold text-gray-900 dark:text-white">
+                          Accessibility Extensions & Bot Integrations
+                        </h3>
+                        <p className="text-xs text-gray-500">Member 2 and Member 3 automated detection webhooks.</p>
+                      </div>
                     </div>
-                  )}
 
-                </div>
-              )}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                      <div className="p-5 bg-tactile-canvas dark:bg-tactile-darksurface rounded-2xl border border-black/[0.04] dark:border-white/5">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-sm">Chrome Web Extension</span>
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">Auto-scans job posts on LinkedIn, Internshala, and Naukri.</p>
+                        <button className="mt-4 px-3.5 py-1.5 rounded-full bg-tactile-obsidian text-white dark:bg-white dark:text-black text-xs font-bold shadow-keycap">
+                          Extension Active
+                        </button>
+                      </div>
 
-              {/* View 2: 3D Topographic Threat Network Canvas */}
-              {currentView === 'network' && (
-                <TopographicThreatGraph graphData={graphData} />
-              )}
+                      <div className="p-5 bg-tactile-canvas dark:bg-tactile-darksurface rounded-2xl border border-black/[0.04] dark:border-white/5">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-sm">WhatsApp Safety Bot</span>
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">Forward offer letters on WhatsApp for instant P.R.I.M.E. verification.</p>
+                        <button className="mt-4 px-3.5 py-1.5 rounded-full bg-tactile-obsidian text-white dark:bg-white dark:text-black text-xs font-bold shadow-keycap">
+                          Bot Connected
+                        </button>
+                      </div>
 
-              {/* View 3: Community Victim Hub & External Go-To Portals */}
-              {currentView === 'community' && (
-                <CommunityVictimAndExternalHub
-                  communityData={communityData}
-                  externalPortals={externalPortals}
-                />
-              )}
-
-              {/* View 4: Accessibility Bots & Extensions Hub (Member 2 Extension Support) */}
-              {currentView === 'bots' && (
-                <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-8 shadow-tactile-heavy border border-tactile-border dark:border-tactile-darkborder space-y-6">
-                  <div className="flex items-center gap-3">
-                    <span className="p-2.5 rounded-2xl bg-tactile-charcoal text-white dark:bg-white dark:text-black shadow-tactile-pill">
-                      <Icons.Bot />
-                    </span>
-                    <div>
-                      <h3 className="text-lg font-extrabold text-gray-900 dark:text-white">
-                        Accessibility Extensions & Messaging Bots
-                      </h3>
-                      <p className="text-xs text-gray-500">
-                        Connect Factora's AI analyzer directly into browser extensions, WhatsApp, and Telegram.
-                      </p>
+                      <div className="p-5 bg-tactile-canvas dark:bg-tactile-darksurface rounded-2xl border border-black/[0.04] dark:border-white/5">
+                        <div className="flex justify-between items-center">
+                          <span className="font-bold text-sm">FastAPI Gateway</span>
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">REST API for college placement cells & TPO ERPs.</p>
+                        <code className="mt-3 block text-[11px] font-mono text-gray-600 dark:text-gray-300">
+                          POST /api/analyzer/analyze
+                        </code>
+                      </div>
                     </div>
                   </div>
+                )}
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                    <div className="p-5 bg-gray-50 dark:bg-tactile-darksurface rounded-2xl border border-gray-200 dark:border-gray-800">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-sm">Chrome Web Extension</span>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">Auto-scans job posts on LinkedIn, Internshala, and Naukri.</p>
-                      <button className="mt-4 px-3 py-1.5 rounded-full bg-tactile-charcoal text-white dark:bg-white dark:text-black text-xs font-bold shadow-tactile-pill">
-                        Extension Active
-                      </button>
-                    </div>
+              </main>
 
-                    <div className="p-5 bg-gray-50 dark:bg-tactile-darksurface rounded-2xl border border-gray-200 dark:border-gray-800">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-sm">WhatsApp Safety Bot</span>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">Forward any suspicious WhatsApp offer to receive instant P.R.I.M.E. verdict.</p>
-                      <button className="mt-4 px-3 py-1.5 rounded-full bg-tactile-charcoal text-white dark:bg-white dark:text-black text-xs font-bold shadow-tactile-pill">
-                        Bot Connected
-                      </button>
-                    </div>
-
-                    <div className="p-5 bg-gray-50 dark:bg-tactile-darksurface rounded-2xl border border-gray-200 dark:border-gray-800">
-                      <div className="flex justify-between items-center">
-                        <span className="font-bold text-sm">REST & Webhook API</span>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                      </div>
-                      <p className="text-xs text-gray-500 mt-2">Direct JSON endpoint for campus placement portals & TPO ERPs.</p>
-                      <code className="mt-3 block text-[11px] font-mono text-gray-600 dark:text-gray-300">
-                        POST /api/analyzer/analyze
-                      </code>
-                    </div>
-                  </div>
+              {/* Footer */}
+              <footer className="border-t border-black/[0.06] dark:border-white/5 py-6 mt-12 bg-tactile-card dark:bg-tactile-darkcard px-8">
+                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 gap-2">
+                  <span>Factora Cyber Defense Platform • Problem 1: Safety Tech — FAKE OR REAL</span>
+                  <span>Trained on 32,500+ Real Benchmark Records • Calibrated ML & P.R.I.M.E. Engine</span>
                 </div>
-              )}
+              </footer>
 
-            </main>
-
-            {/* Footer */}
-            <footer className="border-t border-tactile-border dark:border-tactile-darkborder py-6 mt-12 bg-white dark:bg-tactile-darkcard">
-              <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 gap-2">
-                <span>Factora Autonomous Cyber Defense Platform • Problem 1: Safety Tech — FAKE OR REAL</span>
-                <span>Trained on 32,500+ Real Benchmark Records • Calibrated ML & P.R.I.M.E. Engine</span>
-              </div>
-            </footer>
-
+            </div>
           </div>
         </div>
       );
