@@ -14,7 +14,7 @@ if str(ROOT_DIR) not in sys.path:
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from backend.agent1_analyzer.router import router as analyzer_router
@@ -58,7 +58,8 @@ async def root():
         "endpoints": {
             "agent1_analyzer": "/api/analyzer",
             "agent2_correlator": "/api/correlator",
-            "member3_community": "/api/community"
+            "member3_community": "/api/community",
+            "community_dashboard": "/api/community/ui"
         }
     }
 
@@ -69,6 +70,11 @@ async def ui_dashboard():
     if index_file.exists():
         return FileResponse(index_file)
     return {"error": "frontend/index.html not found"}
+
+
+@app.get("/community", summary="Redirect to Community Dashboard UI")
+async def redirect_community_dashboard():
+    return RedirectResponse(url="/api/community/ui")
 
 
 @app.get("/api/health", summary="Overall Health Check")
@@ -86,4 +92,3 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("backend.main:app", host="0.0.0.0", port=8000, reload=True)
-
