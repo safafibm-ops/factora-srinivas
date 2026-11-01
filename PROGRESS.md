@@ -76,4 +76,5 @@ This document tracks implementation status across all 4 team streams. Every memb
 - [x] Built Community Victim Feed with live INR loss ticker and anonymous reporting modal.
 - [x] Built External "Go-To" Scam Reporting Portal directory cards with one-click official filing links.
 - [x] End-to-end integration with `http://localhost:8000/api/*` endpoints served seamlessly at `/` and `/ui`.
+- [x] Upgraded Left Navigation to tactile squircle sidebar with brand header (`Factora PRO`), categorized section headings (`Threat Intelligence`, `Community Defense`, `Integrations`), labeled items with badges, and mobile bottom navigation strip.
 
