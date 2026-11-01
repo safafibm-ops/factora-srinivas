@@ -17,7 +17,31 @@ from typing import List, Dict, Optional, Any, Tuple
 from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 import requests
-import tldextract
+
+try:
+    import tldextract
+except ImportError:
+    class _FallbackTLDExtract:
+        @staticmethod
+        def extract(url_or_domain: str):
+            from urllib.parse import urlparse
+            netloc = urlparse(url_or_domain).netloc if '://' in url_or_domain else url_or_domain
+            parts = netloc.split('/')[0].split(':')[0].strip().split('.')
+            if len(parts) >= 2:
+                domain = parts[-2]
+                suffix = parts[-1]
+                subdomain = '.'.join(parts[:-2])
+            else:
+                domain = parts[0] if parts else ''
+                suffix = ''
+                subdomain = ''
+            class _Result:
+                def __init__(self, d, s, sub):
+                    self.domain = d
+                    self.suffix = s
+                    self.subdomain = sub
+            return _Result(domain, suffix, subdomain)
+    tldextract = _FallbackTLDExtract()
 
 try:
     import whois

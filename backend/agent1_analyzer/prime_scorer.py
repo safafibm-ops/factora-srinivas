@@ -21,7 +21,10 @@ from shared.schemas import (
     IncidentAnalyzeRequest
 )
 
-from backend.agent1_analyzer.train_real_model import FactoraThreatDetector
+try:
+    from backend.agent1_analyzer.train_real_model import FactoraThreatDetector
+except (ImportError, Exception):
+    FactoraThreatDetector = None
 from backend.agent1_analyzer.osint_scanners import (
     unroll_redirect_chain,
     get_domain_whois_age,
@@ -41,7 +44,7 @@ class PrimeNeuroSymbolicScorer:
 
     def __init__(self):
         try:
-            self.ml_detector = FactoraThreatDetector.load_default()
+            self.ml_detector = FactoraThreatDetector.load_default() if FactoraThreatDetector is not None else None
         except Exception as e:
             print(f"[Warning] Could not load ML model ({e}). Fallback heuristic will be used.")
             self.ml_detector = None

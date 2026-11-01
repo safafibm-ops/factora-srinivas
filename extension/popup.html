@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Factora — Student Cyber Defense Guardian</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      width: 380px;
+      background: #090d16;
+      color: #f8fafc;
+      padding: 16px;
+    }
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 12px;
+      margin-bottom: 14px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      color: #38bdf8;
+      letter-spacing: -0.01em;
+    }
+    .status-pill {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background: #1e293b;
+      color: #94a3b8;
+      font-weight: 600;
+    }
+    .status-pill.online {
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    
+    /* Risk Card */
+    .risk-card {
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+      border: 1px solid #334155;
+      background: #0f172a;
+      transition: all 0.2s ease;
+    }
+    .risk-card.danger {
+      background: rgba(239, 68, 68, 0.12);
+      border-color: rgba(239, 68, 68, 0.4);
+    }
+    .risk-card.caution {
+      background: rgba(245, 158, 11, 0.12);
+      border-color: rgba(245, 158, 11, 0.4);
+    }
+    .risk-card.safe {
+      background: rgba(16, 185, 129, 0.12);
+      border-color: rgba(16, 185, 129, 0.4);
+    }
+    
+    .risk-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .risk-badge.danger { color: #f87171; }
+    .risk-badge.caution { color: #fbbf24; }
+    .risk-badge.safe { color: #34d399; }
+
+    .risk-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 4px;
+    }
+    .risk-subtext {
+      font-size: 12px;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+
+    /* Red Flags section */
+    .section-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #64748b;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .alerts-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .alert-item {
+      font-size: 12px;
+      color: #cbd5e1;
+      background: #131b2e;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 8px 10px;
+      line-height: 1.35;
+    }
+
+    /* Interactive Checklist */
+    .checklist-card {
+      background: #111827;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+    .checklist-items {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .check-label {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 12px;
+      color: #e5e7eb;
+      cursor: pointer;
+      user-select: none;
+    }
+    .check-label input {
+      margin-top: 2px;
+      accent-color: #38bdf8;
+      cursor: pointer;
+    }
+    .check-label.completed span {
+      text-decoration: line-through;
+      color: #6b7280;
+    }
+
+    /* Action buttons */
+    .action-row {
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      flex: 1;
+      padding: 9px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-decoration: none;
+      transition: background 0.15s ease;
+    }
+    .btn-report {
+      background: #dc2626;
+      color: white;
+    }
+    .btn-report:hover { background: #b91c1c; }
+    .btn-rescan {
+      background: #1e293b;
+      color: #cbd5e1;
+    }
+    .btn-rescan:hover { background: #334155; }
+    
+    .footer-note {
+      text-align: center;
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="brand">
+      <span>🛡️</span>
+      <span>Factora Guardian</span>
+    </div>
+    <div class="status-pill online" id="server-status">AI Backend Online</div>
+  </div>
+
+  <div class="risk-card danger" id="risk-card">
+    <div class="risk-badge danger" id="risk-badge">🚨 Critical Syndicate Alert</div>
+    <div class="risk-title" id="risk-title">GhostRecruiter Syndicate Ring</div>
+    <div class="risk-subtext" id="risk-subtext">Correlated with 9 known campus recruitment scam incidents in Factora AI DB.</div>
+  </div>
+
+  <div class="section-title">AI Red Flag Warnings</div>
+  <ul class="alerts-list" id="alerts-list">
+    <li class="alert-item">Demands ₹3,500 laptop security deposit via unauthorized UPI.</li>
+    <li class="alert-item">Domain registered recently; claimed corporate brand mismatch.</li>
+  </ul>
+
+  <div class="checklist-card">
+    <div class="section-title">Before You Proceed (Student Checklist)</div>
+    <div class="checklist-items" id="checklist">
+      <label class="check-label">
+        <input type="checkbox">
+        <span>Verify offer on company's official career portal</span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox">
+        <span>Never transfer money or UPI fees for campus drives</span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox">
+        <span>Do NOT run 'npm install' or run code from assessment repos</span>
+      </label>
+      <label class="check-label">
+        <input type="checkbox">
+        <span>Verify job noticeboard with college TPO office</span>
+      </label>
+    </div>
+  </div>
+
+  <div class="action-row">
+    <a class="btn btn-report" href="https://cybercrime.gov.in" target="_blank">
+      <span>🚨</span>
+      <span>Report Scam (1930)</span>
+    </a>
+    <button class="btn btn-rescan" id="rescan-btn">
+      <span>🔄</span>
+      <span>Re-Scan Tab</span>
+    </button>
+  </div>
+
+  <div class="footer-note">Factora Cyber Defense Network • Safety Tech Hackathon 2026</div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
