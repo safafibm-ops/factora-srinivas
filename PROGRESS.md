@@ -18,6 +18,7 @@ This document tracks implementation status across all 4 team streams. Every memb
 
 ## 🔍 Stream 1: Member 1 — Agent 1 (Cyber Threat Analyzer)
 - [x] Directory and role documentation established in `/backend/agent1_analyzer/AGENTS.md`.
+- [x] Trained Agent 1 Real ML Ensemble (`Calibrated LinearSVC + XGBoost` on 32,500+ rows, ROC-AUC 0.987, F1 0.914).
 - [x] Working mock router endpoint `GET /api/analyzer/mock` active.
 - [x] Heuristic threat analysis endpoint `POST /api/analyzer/analyze` active.
 - [x] Checklist retrieval endpoint `GET /api/analyzer/checklist/{incident_id}` active.

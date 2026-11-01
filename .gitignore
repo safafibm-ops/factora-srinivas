@@ -5,6 +5,8 @@ __pycache__/
 venv/
 env/
 .env
+.cache/
+backend/agent1_analyzer/.cache/
 .pytest_cache/
 .coverage
 htmlcov/
