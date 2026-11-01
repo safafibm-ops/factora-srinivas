@@ -1,0 +1,26 @@
+# Agent 1: Cyber Threat Detection Analyzer Requirements
+# Real Dataset Loading, ML Model Training, OSINT, OCR, and Forensics
+
+# Machine Learning & Real Dataset Loading
+datasets>=2.18.0
+scikit-learn>=1.4.0
+xgboost>=2.0.0
+joblib>=1.3.0
+pandas>=2.2.0
+numpy>=1.26.0
+
+# OSINT, DNS & WHOIS Forensics
+python-whois>=0.8.0
+dnspython>=2.6.0
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+tldextract>=5.1.0
+
+# Image OCR & Vision Analysis
+pillow>=10.2.0
+pytesseract>=0.3.10
+
+# API Fallbacks for Vision OCR & Heuristic Explanations
+google-generativeai>=0.4.0
+groq>=0.4.0
+
