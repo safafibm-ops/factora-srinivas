@@ -21,7 +21,7 @@ import json
 import time
 import urllib.request
 from pathlib import Path
-from typing import List, Dict, Tuple, Any
+from typing import List, Dict, Tuple, Any, Optional
 
 import numpy as np
 import pandas as pd
@@ -269,19 +269,29 @@ def load_real_benchmark_data() -> Tuple[List[str], List[int]]:
 
 class FactoraThreatDetector:
     """Inference wrapper combining TF-IDF and engineered student-threat heuristics."""
-    def __init__(self, tfidf: TfidfVectorizer, model_ensemble: Any):
+    def __init__(self, tfidf: TfidfVectorizer, svc: Any, xgb: Any):
         self.tfidf = tfidf
-        self.model_ensemble = model_ensemble
+        self.svc = svc
+        self.xgb = xgb
         self.feature_names = ENGINEERED_FEATURE_NAMES
 
+    @classmethod
+    def load_default(cls, model_path: Optional[str] = None):
+        """Convenient one-line loader that loads the trained model bundle."""
+        p = Path(model_path) if model_path else ARTIFACT_PATH
+        if not p.exists():
+            raise FileNotFoundError(f"Trained model not found at {p}. Run train_real_model.py first.")
+        data = joblib.load(p)
+        return cls(data["tfidf"], data["svc"], data["xgb"])
+
     def predict_proba(self, text: str) -> float:
-        """Returns scam/threat probability (0.0 to 1.0)."""
+        """Returns scam/threat probability (0.0 to 1.0) using 60% LinearSVC + 40% XGBoost."""
         tfidf_vec = self.tfidf.transform([text])
         eng_feats = extract_engineered_features([text])
         X = hstack([tfidf_vec, csr_matrix(eng_feats)])
-        # Ensemble soft probability for class 1 (threat)
-        prob = float(self.model_ensemble.predict_proba(X)[0][1])
-        return prob
+        prob_svc = float(self.svc.predict_proba(X)[0][1])
+        prob_xgb = float(self.xgb.predict_proba(X)[0][1])
+        return 0.60 * prob_svc + 0.40 * prob_xgb
 
     def predict_detailed(self, text: str) -> Dict[str, Any]:
         """Returns comprehensive threat score, label, and triggered behavioral flags."""
@@ -296,23 +306,6 @@ class FactoraThreatDetector:
             "verdict": "SCAM / MALICIOUS" if prob >= 0.50 else "LEGITIMATE / SAFE",
             "triggered_signals": triggered_signals
         }
-
-
-class EnsembleVoter:
-    """Soft-voting ensemble of calibrated LinearSVC and XGBoost."""
-    def __init__(self, svc_calibrated, xgb):
-        self.svc = svc_calibrated
-        self.xgb = xgb
-
-    def predict_proba(self, X):
-        prob_svc = self.svc.predict_proba(X)
-        prob_xgb = self.xgb.predict_proba(X)
-        # Weighted blend (60% Calibrated LinearSVC + 40% XGBoost)
-        return 0.60 * prob_svc + 0.40 * prob_xgb
-
-    def predict(self, X):
-        probs = self.predict_proba(X)
-        return (probs[:, 1] >= 0.50).astype(int)
 
 
 def train_factora_model():
@@ -362,12 +355,15 @@ def train_factora_model():
     )
     xgb.fit(X_train, y_train)
 
-    ensemble = EnsembleVoter(calibrated_svc, xgb)
+    detector = FactoraThreatDetector(tfidf, calibrated_svc, xgb)
 
     print("\n" + "=" * 70)
     print("  [*] AGENT 1 REAL BENCHMARK EVALUATION RESULTS (20% Holdout Test Set) [*]")
     print("=" * 70)
-    y_pred_probs = ensemble.predict_proba(X_val)[:, 1]
+    # Predict over validation set using detector
+    prob_svc_val = calibrated_svc.predict_proba(X_val)[:, 1]
+    prob_xgb_val = xgb.predict_proba(X_val)[:, 1]
+    y_pred_probs = 0.60 * prob_svc_val + 0.40 * prob_xgb_val
     y_pred = (y_pred_probs >= 0.50).astype(int)
 
     report = classification_report(y_val, y_pred, target_names=["Safe / Legitimate", "Scam / Threat"])
@@ -390,7 +386,6 @@ def train_factora_model():
         "Telegram part-time job: Earn 5000 daily by rating hotels on Google Maps. Contact @VIPTaskIndia on Telegram now."
     ]
 
-    detector = FactoraThreatDetector(tfidf, ensemble)
     print("\n[Sanity Check on Sample Inputs]:")
     for tc in test_cases:
         res = detector.predict_detailed(tc)
@@ -401,7 +396,8 @@ def train_factora_model():
     print(f"\n[Step 2.7] Saving Trained Model Bundle to {ARTIFACT_PATH}...")
     artifact = {
         "tfidf": tfidf,
-        "ensemble": ensemble,
+        "svc": calibrated_svc,
+        "xgb": xgb,
         "feature_names": ENGINEERED_FEATURE_NAMES,
         "metrics": {
             "roc_auc": float(auc),
