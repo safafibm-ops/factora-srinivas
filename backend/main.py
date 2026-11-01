@@ -14,7 +14,8 @@ if str(ROOT_DIR) not in sys.path:
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 
 from backend.agent1_analyzer.router import router as analyzer_router
 from backend.agent2_correlator.router import router as correlator_router
@@ -42,9 +43,14 @@ app.include_router(analyzer_router)
 app.include_router(correlator_router)
 app.include_router(community_router)
 
+FRONTEND_DIR = ROOT_DIR / "frontend"
 
-@app.get("/", summary="Root Index")
+
+@app.get("/", summary="Root UI Dashboard")
 async def root():
+    index_file = FRONTEND_DIR / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
     return {
         "platform": "Factora — Fake or Real Safety Tech",
         "status": "operational",
@@ -55,6 +61,14 @@ async def root():
             "member3_community": "/api/community"
         }
     }
+
+
+@app.get("/ui", summary="Factora Web Dashboard")
+async def ui_dashboard():
+    index_file = FRONTEND_DIR / "index.html"
+    if index_file.exists():
+        return FileResponse(index_file)
+    return {"error": "frontend/index.html not found"}
 
 
 @app.get("/api/health", summary="Overall Health Check")

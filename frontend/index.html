@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Factora — Safety Tech Cyber Defense Platform</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace']
+          },
+          colors: {
+            tactile: {
+              bg: '#F2F4F7',
+              darkbg: '#0F1115',
+              card: '#FFFFFF',
+              darkcard: '#181A20',
+              charcoal: '#141518',
+              border: '#E2E5EA',
+              accent: '#00E599',
+              danger: '#FF3B30',
+              warning: '#FF9500'
+            }
+          },
+          boxShadow: {
+            'tactile': '0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03)',
+            'tactile-pill': '0 4px 14px 0 rgba(0, 0, 0, 0.25), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2)',
+            'tactile-card': '0 20px 30px -10px rgba(0, 0, 0, 0.07), 0 1px 3px 0 rgba(0, 0, 0, 0.05)',
+            'tactile-inset': 'inset 0 2px 4px 0 rgba(0, 0, 0, 0.06)'
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18 & Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    body {
+      background-color: #F2F4F7;
+      color: #141518;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .dark body {
+      background-color: #0C0E12;
+      color: #F0F2F5;
+    }
+    /* Smooth tactile gauge transition */
+    .gauge-needle {
+      transform-origin: 50% 100%;
+      transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // API Base URL
+    const API_BASE = window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')
+      ? 'http://localhost:8000/api'
+      : '/api';
+
+    // ==========================================
+    // SVG Icons
+    // ==========================================
+    const ShieldIcon = () => (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    );
+    const NetworkIcon = () => (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+    );
+    const UsersIcon = () => (
+      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+    );
+    const ExternalLinkIcon = () => (
+      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+    );
+    const CheckCircleIcon = () => (
+      <svg className="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+    );
+    const AlertTriangleIcon = () => (
+      <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+    );
+
+    // ==========================================
+    // 1. Tactile Speedometer Gauge Component
+    // ==========================================
+    function TactileGauge({ score, tier }) {
+      // score is 0 to 100, maps to -90deg to +90deg
+      const angle = -90 + (score / 100) * 180;
+      
+      const getTierColor = () => {
+        if (score >= 85) return '#EF4444'; // Red
+        if (score >= 70) return '#F97316'; // Orange
+        if (score >= 45) return '#F59E0B'; // Amber
+        if (score >= 20) return '#3B82F6'; // Blue
+        return '#10B981'; // Green
+      };
+
+      return (
+        <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-tactile-darkcard rounded-3xl shadow-tactile-card border border-tactile-border dark:border-gray-800">
+          <div className="flex items-center justify-between w-full mb-2">
+            <span className="text-xs font-bold tracking-wider text-gray-400 uppercase">P.R.I.M.E. Risk Score</span>
+            <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+              0 – 100 Index
+            </span>
+          </div>
+
+          {/* Semi-circular dial */}
+          <div className="relative w-64 h-36 flex items-end justify-center overflow-hidden pt-4">
+            <svg viewBox="0 0 200 110" className="w-56 h-32">
+              {/* Dial Track */}
+              <path
+                d="M 20 100 A 80 80 0 0 1 180 100"
+                fill="none"
+                stroke="#E5E7EB"
+                strokeWidth="16"
+                strokeLinecap="round"
+                className="dark:stroke-gray-800"
+              />
+              {/* Colored Active Arc */}
+              <path
+                d="M 20 100 A 80 80 0 0 1 180 100"
+                fill="none"
+                stroke={getTierColor()}
+                strokeWidth="16"
+                strokeDasharray="251.2"
+                strokeDashoffset={251.2 - (251.2 * score) / 100}
+                strokeLinecap="round"
+              />
+              {/* Center Needle Base */}
+              <circle cx="100" cy="100" r="10" fill="#141518" className="dark:fill-white" />
+              {/* Tactile Needle Pointer */}
+              <line
+                x1="100"
+                y1="100"
+                x2="100"
+                y2="28"
+                stroke="#141518"
+                strokeWidth="4"
+                strokeLinecap="round"
+                className="gauge-needle dark:stroke-white"
+                style={{ transform: `rotate(${angle}deg)` }}
+              />
+            </svg>
+          </div>
+
+          {/* Score display */}
+          <div className="text-center mt-2">
+            <div className="text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+              {score}
+              <span className="text-sm font-medium text-gray-400 ml-1">/100</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 mt-2 rounded-full text-xs font-bold uppercase tracking-wider"
+              style={{ backgroundColor: `${getTierColor()}20`, color: getTierColor() }}>
+              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: getTierColor() }}></span>
+              {tier}
+            </div>
+          </div>
+
+          <div className="flex justify-between w-full text-xs text-gray-400 font-mono mt-4 px-4">
+            <span>0 SAFE</span>
+            <span>50 CAUTION</span>
+            <span>100 SCAM</span>
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 2. Interactive Verification Checklist Component
+    // ==========================================
+    function VerificationChecklist({ checklist, incidentId }) {
+      const [checkedItems, setCheckedItems] = useState({});
+
+      const toggleCheck = (idx) => {
+        setCheckedItems(prev => ({ ...prev, [idx]: !prev[idx] }));
+      };
+
+      const completedCount = Object.values(checkedItems).filter(Boolean).length;
+      const progressPercent = checklist.length > 0 ? (completedCount / checklist.length) * 100 : 0;
+
+      return (
+        <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-6 shadow-tactile-card border border-tactile-border dark:border-gray-800">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <ShieldIcon />
+                Verify Before Proceeding Checklist
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                Mandatory protection steps you must verify before paying, replying, or downloading code.
+              </p>
+            </div>
+            <div className="text-right">
+              <span className="text-xs font-bold font-mono text-gray-900 dark:text-white">
+                {completedCount} / {checklist.length} Verified
+              </span>
+              <div className="w-28 h-2 bg-gray-100 dark:bg-gray-800 rounded-full mt-1 overflow-hidden">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                  style={{ width: `${progressPercent}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {checklist.map((step, idx) => {
+              const isChecked = checkedItems[idx] || false;
+              return (
+                <div
+                  key={idx}
+                  onClick={() => toggleCheck(idx)}
+                  className={`p-4 rounded-2xl border transition-all cursor-pointer select-none flex items-start gap-3.5 ${
+                    isChecked
+                      ? 'bg-emerald-50/60 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/40'
+                      : 'bg-gray-50/70 dark:bg-gray-900/40 border-gray-100 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => {}}
+                    className="mt-1 w-5 h-5 rounded text-emerald-600 focus:ring-0 cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-bold ${isChecked ? 'line-through text-gray-500' : 'text-gray-900 dark:text-white'}`}>
+                        {step.step_title}
+                      </span>
+                      {step.is_mandatory && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-950 text-red-600 dark:text-red-400">
+                          MANDATORY
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                      <strong className="text-gray-700 dark:text-gray-300">Why it matters:</strong> {step.why_it_matters}
+                    </p>
+                    <div className="mt-2 text-xs font-mono bg-white dark:bg-tactile-darkbg p-2 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-800 dark:text-gray-200">
+                      👉 {step.action_url_or_instruction}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 3. Correlation Network Graph Component
+    // ==========================================
+    function ThreatCorrelationCanvas({ graphData }) {
+      const canvasRef = useRef(null);
+
+      useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas || !graphData) return;
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        ctx.clearRect(0, 0, width, height);
+
+        const nodes = graphData.nodes || [];
+        const edges = graphData.edges || [];
+
+        // Assign fixed pleasant radial coordinates for nodes
+        const nodePositions = {};
+        const centerX = width / 2;
+        const centerY = height / 2;
+
+        nodes.forEach((node, i) => {
+          if (i === 0) {
+            nodePositions[node.id] = { x: centerX, y: centerY };
+          } else {
+            const angle = ((i - 1) / (nodes.length - 1)) * 2 * Math.PI;
+            const radius = 130;
+            nodePositions[node.id] = {
+              x: centerX + radius * Math.cos(angle),
+              y: centerY + radius * Math.sin(angle)
+            };
+          }
+        });
+
+        // Draw Edges
+        edges.forEach(edge => {
+          const from = nodePositions[edge.source];
+          const to = nodePositions[edge.target];
+          if (from && to) {
+            ctx.beginPath();
+            ctx.moveTo(from.x, from.y);
+            ctx.lineTo(to.x, to.y);
+            ctx.strokeStyle = '#D1D5DB';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Draw edge relationship label in middle
+            const midX = (from.x + to.x) / 2;
+            const midY = (from.y + to.y) / 2;
+            ctx.font = '10px Plus Jakarta Sans';
+            ctx.fillStyle = '#9CA3AF';
+            ctx.fillText(edge.relationship, midX, midY);
+          }
+        });
+
+        // Draw Nodes
+        nodes.forEach((node, i) => {
+          const pos = nodePositions[node.id];
+          if (!pos) return;
+
+          ctx.beginPath();
+          ctx.arc(pos.x, pos.y, i === 0 ? 24 : 18, 0, 2 * Math.PI);
+          
+          if (node.node_type === 'incident') {
+            ctx.fillStyle = i === 0 ? '#141518' : '#6B7280';
+          } else if (node.node_type === 'campaign') {
+            ctx.fillStyle = '#EF4444';
+          } else if (node.node_type === 'phone_upi') {
+            ctx.fillStyle = '#F59E0B';
+          } else {
+            ctx.fillStyle = '#3B82F6';
+          }
+          ctx.fill();
+
+          // Border
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+
+          // Node Text
+          ctx.font = '11px Plus Jakarta Sans';
+          ctx.fillStyle = '#111827';
+          ctx.textAlign = 'center';
+          ctx.fillText(node.label, pos.x, pos.y + (i === 0 ? 38 : 32));
+        });
+
+      }, [graphData]);
+
+      return (
+        <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-6 shadow-tactile-card border border-tactile-border dark:border-gray-800">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                <NetworkIcon />
+                Threat Correlation & Syndicate Graph
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Visualizing entity relationships across past scam campaigns, UPI handles, and GitHub assessment traps.
+              </p>
+            </div>
+            {graphData.campaign && (
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-600 dark:bg-red-950 dark:text-red-400">
+                Campaign: {graphData.campaign}
+              </span>
+            )}
+          </div>
+
+          <div className="flex justify-center bg-gray-50 dark:bg-tactile-darkbg rounded-2xl p-4 border border-gray-100 dark:border-gray-800">
+            <canvas ref={canvasRef} width="600" height="340" className="max-w-full"></canvas>
+          </div>
+
+          {/* Connection Explanations */}
+          {graphData.related_incidents && graphData.related_incidents.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Historical Attack Attribution</span>
+              {graphData.related_incidents.map((rel, idx) => (
+                <div key={idx} className="p-3 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 text-xs">
+                  <span className="font-bold text-gray-900 dark:text-white font-mono">{rel.matched_incident_id}:</span> {rel.connection_explanation}
+                  <div className="mt-1 flex gap-2">
+                    <span className="text-[10px] text-gray-500 font-mono">Shared: {rel.shared_indicators.join(', ')}</span>
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold ml-auto">Confidence: {(rel.relationship_confidence * 100).toFixed(0)}%</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 4. Community Victim Feed & External Portals
+    // ==========================================
+    function CommunityAndExternalPortals({ communityData, externalPortals }) {
+      const [showReportModal, setShowReportModal] = useState(false);
+      const [reportForm, setReportForm] = useState({
+        org: '',
+        amount: '',
+        contact: '',
+        desc: ''
+      });
+      const [reportSuccess, setReportSuccess] = useState(null);
+
+      const submitReport = async (e) => {
+        e.preventDefault();
+        try {
+          const res = await fetch(`${API_BASE}/community/report`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              incident_title: `Fraud report for ${reportForm.org}`,
+              claimed_organization: reportForm.org,
+              scam_type: 'Campus Recruitment Fraud',
+              amount_demanded_or_lost_inr: parseFloat(reportForm.amount) || 0,
+              scammer_contacts: [reportForm.contact],
+              scammer_links: [],
+              description: reportForm.desc
+            })
+          });
+          const data = await res.json();
+          setReportSuccess(data.message);
+          setTimeout(() => {
+            setShowReportModal(false);
+            setReportSuccess(null);
+            setReportForm({ org: '', amount: '', contact: '', desc: '' });
+          }, 2000);
+        } catch (err) {
+          alert('Failed to submit: ' + err);
+        }
+      };
+
+      return (
+        <div className="space-y-6">
+          {/* Victim Loss Stat Ticker */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="p-5 bg-white dark:bg-tactile-darkcard rounded-3xl shadow-tactile border border-tactile-border dark:border-gray-800">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Campus Financial Losses Reported</span>
+              <div className="text-3xl font-extrabold text-red-600 dark:text-red-400 mt-1 font-mono">
+                ₹{(communityData?.total_reported_money_lost_inr || 49000).toLocaleString('en-IN')}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Confirmed student monetary loss across syndicate reports.</p>
+            </div>
+
+            <div className="p-5 bg-white dark:bg-tactile-darkcard rounded-3xl shadow-tactile border border-tactile-border dark:border-gray-800">
+              <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Active Victim Testimonials</span>
+              <div className="text-3xl font-extrabold text-gray-900 dark:text-white mt-1 font-mono">
+                {communityData?.internal_victim_reports_count || 14}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Student complaints verified by college placement cells.</p>
+            </div>
+
+            <div className="p-5 bg-tactile-charcoal text-white rounded-3xl shadow-tactile flex flex-col justify-between">
+              <div>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Proactive Defense</span>
+                <h4 className="text-base font-bold mt-1">Were you targeted by this recruiter?</h4>
+                <p className="text-xs text-gray-300 mt-1">Log it anonymously to warn campus batches.</p>
+              </div>
+              <button
+                onClick={() => setShowReportModal(true)}
+                className="mt-3 px-4 py-2 rounded-full bg-white text-gray-900 text-xs font-bold hover:bg-gray-100 transition shadow-tactile-pill flex items-center justify-center gap-1.5"
+              >
+                Anonymous Victim Report →
+              </button>
+            </div>
+          </div>
+
+          {/* External Go-To Scam Reporting Websites Directory */}
+          <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-6 shadow-tactile-card border border-tactile-border dark:border-gray-800">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <ExternalLinkIcon />
+                  External "Go-To" Scam Reporting Websites & Official Portals
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Don't stop at detection—file your complaint directly with government cybercrime units and public anti-scam networks.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {(externalPortals || []).map((portal, idx) => (
+                <div key={idx} className="p-4 rounded-2xl bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-bold text-gray-900 dark:text-white">{portal.portal_name}</h4>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300">
+                        OFFICIAL
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1.5">{portal.external_report_summary}</p>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between">
+                    <span className="text-[11px] font-mono text-gray-400 truncate max-w-[200px]">{portal.portal_url}</span>
+                    <a
+                      href={portal.direct_report_submission_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3 py-1.5 rounded-full bg-tactile-charcoal text-white dark:bg-white dark:text-black text-xs font-bold hover:opacity-90 transition flex items-center gap-1 shadow-tactile-pill"
+                    >
+                      File Report There <ExternalLinkIcon />
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Anonymized Victim Testimonials */}
+          <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-6 shadow-tactile-card border border-tactile-border dark:border-gray-800">
+            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Recent Campus Evidence Log</h3>
+            <div className="space-y-2.5">
+              {(communityData?.victim_evidence_summaries || []).map((summary, idx) => (
+                <div key={idx} className="p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-800 text-xs text-gray-700 dark:text-gray-300 flex items-start gap-2.5">
+                  <span className="text-red-500 font-bold">⚠️</span>
+                  <span>"{summary}"</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Modal */}
+          {showReportModal && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+              <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-6 max-w-md w-full shadow-2xl border border-gray-200 dark:border-gray-800">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-base font-bold text-gray-900 dark:text-white">Submit Anonymous Scam Report</h3>
+                  <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+                </div>
+                {reportSuccess ? (
+                  <div className="p-4 bg-emerald-50 text-emerald-800 rounded-2xl text-center text-sm font-bold">
+                    ✓ {reportSuccess}
+                  </div>
+                ) : (
+                  <form onSubmit={submitReport} className="space-y-3">
+                    <div>
+                      <label className="text-xs font-bold text-gray-600 dark:text-gray-400">Claimed Company or University</label>
+                      <input
+                        type="text"
+                        required
+                        value={reportForm.org}
+                        onChange={e => setReportForm({ ...reportForm, org: e.target.value })}
+                        placeholder="e.g. TCS Spoof, Telegram Tasks"
+                        className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-600 dark:text-gray-400">Amount Demanded or Lost (INR)</label>
+                      <input
+                        type="number"
+                        value={reportForm.amount}
+                        onChange={e => setReportForm({ ...reportForm, amount: e.target.value })}
+                        placeholder="e.g. 3500"
+                        className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-600 dark:text-gray-400">Scammer UPI ID / Phone</label>
+                      <input
+                        type="text"
+                        value={reportForm.contact}
+                        onChange={e => setReportForm({ ...reportForm, contact: e.target.value })}
+                        placeholder="e.g. upi@oksbi, +919876543210"
+                        className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-gray-600 dark:text-gray-400">Brief Incident Description</label>
+                      <textarea
+                        rows="3"
+                        required
+                        value={reportForm.desc}
+                        onChange={e => setReportForm({ ...reportForm, desc: e.target.value })}
+                        placeholder="Explain what happened..."
+                        className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs text-gray-900 dark:text-white"
+                      ></textarea>
+                    </div>
+                    <button
+                      type="submit"
+                      className="w-full py-2.5 rounded-full bg-tactile-charcoal text-white dark:bg-white dark:text-black font-bold text-xs hover:opacity-90 shadow-tactile-pill"
+                    >
+                      Broadcast to Factora Defense Network →
+                    </button>
+                  </form>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // ==========================================
+    // 5. Main Application Component
+    // ==========================================
+    function App() {
+      const [activeTab, setActiveTab] = useState('scan'); // 'scan', 'network', 'community'
+      const [scanMode, setScanMode] = useState('text'); // 'text', 'url', 'github', 'ocr'
+      
+      const [inputText, setInputText] = useState('');
+      const [inputUrl, setInputUrl] = useState('');
+      const [inputGithub, setInputGithub] = useState('');
+      const [screenshotBase64, setScreenshotBase64] = useState(null);
+
+      const [isLoading, setIsLoading] = useState(false);
+      const [threatRecord, setThreatRecord] = useState(null);
+      const [graphData, setGraphData] = useState(null);
+      const [communityData, setCommunityData] = useState(null);
+      const [externalPortals, setExternalPortals] = useState([]);
+      const [darkMode, setDarkMode] = useState(false);
+
+      // Load initial mock & portal data on mount
+      useEffect(() => {
+        fetch(`${API_BASE}/analyzer/mock`)
+          .then(res => res.json())
+          .then(data => setThreatRecord(data))
+          .catch(() => {});
+
+        fetch(`${API_BASE}/correlator/mock`)
+          .then(res => res.json())
+          .then(data => setGraphData(data))
+          .catch(() => {});
+
+        fetch(`${API_BASE}/community/mock`)
+          .then(res => res.json())
+          .then(data => setCommunityData(data))
+          .catch(() => {});
+
+        fetch(`${API_BASE}/community/external-portals`)
+          .then(res => res.json())
+          .then(data => setExternalPortals(data))
+          .catch(() => {});
+      }, []);
+
+      const handleFileUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          setScreenshotBase64(event.target.result);
+        };
+        reader.readAsDataURL(file);
+      };
+
+      const handleAnalyze = async () => {
+        setIsLoading(true);
+        try {
+          const payload = {
+            input_text: scanMode === 'text' ? inputText : null,
+            target_url: scanMode === 'url' ? inputUrl : null,
+            github_repo_url: scanMode === 'github' ? inputGithub : null,
+            screenshot_base64: scanMode === 'ocr' ? screenshotBase64 : null
+          };
+
+          const res = await fetch(`${API_BASE}/analyzer/analyze`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json();
+          setThreatRecord(data);
+
+          // Correlate with Agent 2
+          const corrRes = await fetch(`${API_BASE}/correlator/correlate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ incident_id: data.incident_id, extracted_indicators: data.extracted_indicators })
+          });
+          const corrData = await corrRes.json();
+          setGraphData(corrData);
+
+        } catch (err) {
+          console.error(err);
+          alert('Error analyzing threat: ' + err.message);
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      const loadDemoCase = (type) => {
+        if (type === 'tcs_scam') {
+          setScanMode('text');
+          setInputText("Congratulations! Direct selection at Tata Consultancy Services without technical interview. To dispatch your corporate laptop and access card, kindly transfer refundable caution deposit of Rs. 3,500 to UPI ID tcs.hrverification@oksbi within 24 hours.");
+        } else if (type === 'github_backdoor') {
+          setScanMode('github');
+          setInputGithub("https://github.com/tcs-assessment-portal/coding-round-2026");
+        } else if (type === 'legit_interview') {
+          setScanMode('text');
+          setInputText("Dear Candidate, Your technical round for Software Engineer at Microsoft is scheduled for Tuesday at 10:00 AM IST via Teams. Please note Microsoft never requests fees or deposits during recruitment.");
+        }
+      };
+
+      return (
+        <div className={darkMode ? 'dark' : ''}>
+          <div className="min-h-screen bg-tactile-bg dark:bg-tactile-darkbg text-gray-900 dark:text-gray-100 flex flex-col">
+            
+            {/* Header Navigation Bar */}
+            <header className="border-b border-tactile-border dark:border-gray-800 bg-white/80 dark:bg-tactile-darkcard/80 backdrop-blur sticky top-0 z-40">
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                
+                {/* Brand Logo */}
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-2xl bg-tactile-charcoal dark:bg-white text-white dark:text-black flex items-center justify-center shadow-tactile-pill font-black text-lg">
+                    F
+                  </div>
+                  <div>
+                    <span className="font-extrabold text-lg tracking-tight text-gray-900 dark:text-white">Factora</span>
+                    <span className="text-[10px] font-bold ml-2 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400">
+                      SAFETY TECH — FAKE OR REAL
+                    </span>
+                  </div>
+                </div>
+
+                {/* Center Navigation Pills */}
+                <nav className="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-gray-900 rounded-full border border-gray-200 dark:border-gray-800 text-xs font-bold">
+                  <button
+                    onClick={() => setActiveTab('scan')}
+                    className={`px-4 py-1.5 rounded-full transition flex items-center gap-1.5 ${
+                      activeTab === 'scan' ? 'bg-tactile-charcoal text-white dark:bg-white dark:text-black shadow-tactile-pill' : 'text-gray-600 dark:text-gray-400 hover:text-black'
+                    }`}
+                  >
+                    <ShieldIcon /> Scanner & Checklist
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('network')}
+                    className={`px-4 py-1.5 rounded-full transition flex items-center gap-1.5 ${
+                      activeTab === 'network' ? 'bg-tactile-charcoal text-white dark:bg-white dark:text-black shadow-tactile-pill' : 'text-gray-600 dark:text-gray-400 hover:text-black'
+                    }`}
+                  >
+                    <NetworkIcon /> Threat Correlation Graph
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('community')}
+                    className={`px-4 py-1.5 rounded-full transition flex items-center gap-1.5 ${
+                      activeTab === 'community' ? 'bg-tactile-charcoal text-white dark:bg-white dark:text-black shadow-tactile-pill' : 'text-gray-600 dark:text-gray-400 hover:text-black'
+                    }`}
+                  >
+                    <UsersIcon /> Community & External Portals
+                  </button>
+                </nav>
+
+                {/* Right controls */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setDarkMode(!darkMode)}
+                    className="p-2 rounded-xl border border-gray-200 dark:border-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-xs font-bold"
+                  >
+                    {darkMode ? '☀️ Light' : '🌙 Dark'}
+                  </button>
+                  <a
+                    href="https://cybercrime.gov.in"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hidden sm:inline-flex px-3.5 py-1.5 rounded-full bg-red-600 text-white text-xs font-bold hover:bg-red-700 transition shadow-tactile-pill items-center gap-1"
+                  >
+                    Emergency 1930
+                  </a>
+                </div>
+              </div>
+            </header>
+
+            {/* Main Content Area */}
+            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full space-y-8">
+              
+              {activeTab === 'scan' && (
+                <div className="space-y-8">
+                  
+                  {/* Hero Intro */}
+                  <div className="text-center max-w-2xl mx-auto">
+                    <span className="text-xs font-bold tracking-widest text-emerald-600 dark:text-emerald-400 uppercase bg-emerald-50 dark:bg-emerald-950/60 px-3 py-1 rounded-full border border-emerald-200 dark:border-emerald-800/40">
+                      Neuro-Symbolic Multimodal Defense
+                    </span>
+                    <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mt-3 tracking-tight">
+                      Detect Fake Job Offers, Phishing & Assessment Malware
+                    </h1>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      Cross-checks offer letters, WHOIS domains, UGC Fake University registries, and GitHub repos.
+                    </p>
+                  </div>
+
+                  {/* Input Card */}
+                  <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-6 shadow-tactile-card border border-tactile-border dark:border-gray-800">
+                    
+                    {/* Scanner Input Mode Tabs */}
+                    <div className="flex flex-wrap items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-4 mb-4 gap-2">
+                      <div className="flex items-center gap-2">
+                        {[
+                          { id: 'text', label: 'Offer Text / Email / SMS' },
+                          { id: 'ocr', label: 'Upload Screenshot (OCR)' },
+                          { id: 'url', label: 'Inspect URL / Domain' },
+                          { id: 'github', label: 'Audit GitHub Repo' }
+                        ].map(t => (
+                          <button
+                            key={t.id}
+                            onClick={() => setScanMode(t.id)}
+                            className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition ${
+                              scanMode === t.id
+                                ? 'bg-tactile-charcoal text-white dark:bg-white dark:text-black shadow-tactile-pill'
+                                : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200'
+                            }`}
+                          >
+                            {t.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Demo Quick Fills */}
+                      <div className="flex items-center gap-1.5 text-xs">
+                        <span className="text-gray-400 font-bold">Try Demos:</span>
+                        <button onClick={() => loadDemoCase('tcs_scam')} className="px-2.5 py-1 rounded-lg bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400 font-bold hover:bg-red-100">
+                          TCS ₹3500 Scam
+                        </button>
+                        <button onClick={() => loadDemoCase('github_backdoor')} className="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400 font-bold hover:bg-amber-100">
+                          GitHub Malware
+                        </button>
+                        <button onClick={() => loadDemoCase('legit_interview')} className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 font-bold hover:bg-emerald-100">
+                          Legit Microsoft
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Mode Inputs */}
+                    {scanMode === 'text' && (
+                      <textarea
+                        rows="4"
+                        value={inputText}
+                        onChange={e => setInputText(e.target.value)}
+                        placeholder="Paste offer letter, WhatsApp message, Telegram task description, or email text here..."
+                        className="w-full p-4 rounded-2xl bg-gray-50 dark:bg-tactile-darkbg border border-gray-200 dark:border-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+                      ></textarea>
+                    )}
+
+                    {scanMode === 'ocr' && (
+                      <div className="p-8 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl text-center flex flex-col items-center justify-center">
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleFileUpload}
+                          className="hidden"
+                          id="ocr-upload"
+                        />
+                        <label htmlFor="ocr-upload" className="cursor-pointer flex flex-col items-center">
+                          <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center text-xl mb-2">
+                            📷
+                          </div>
+                          <span className="text-sm font-bold text-gray-900 dark:text-white">Click to upload screenshot</span>
+                          <span className="text-xs text-gray-500 mt-1">PNG, JPG, or WebP of offer letter or WhatsApp chat</span>
+                        </label>
+                        {screenshotBase64 && (
+                          <div className="mt-4 p-2 bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-xl">
+                            ✓ Screenshot loaded and ready for OCR analysis
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {scanMode === 'url' && (
+                      <input
+                        type="url"
+                        value={inputUrl}
+                        onChange={e => setInputUrl(e.target.value)}
+                        placeholder="Enter suspicious link (e.g. bit.ly shortener, fake university portal, scholarship link)..."
+                        className="w-full p-4 rounded-2xl bg-gray-50 dark:bg-tactile-darkbg border border-gray-200 dark:border-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+                      />
+                    )}
+
+                    {scanMode === 'github' && (
+                      <input
+                        type="url"
+                        value={inputGithub}
+                        onChange={e => setInputGithub(e.target.value)}
+                        placeholder="Enter GitHub candidate assessment repo URL (e.g. https://github.com/recruiter/react-test)..."
+                        className="w-full p-4 rounded-2xl bg-gray-50 dark:bg-tactile-darkbg border border-gray-200 dark:border-gray-800 text-sm focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-white"
+                      />
+                    )}
+
+                    {/* Submit Button */}
+                    <div className="mt-4 flex justify-end">
+                      <button
+                        onClick={handleAnalyze}
+                        disabled={isLoading}
+                        className="px-6 py-3 rounded-full bg-tactile-charcoal text-white dark:bg-white dark:text-black font-extrabold text-sm hover:opacity-90 transition shadow-tactile-pill flex items-center gap-2"
+                      >
+                        {isLoading ? 'Scanning Threat Vectors...' : 'Execute Deep Threat Analysis →'}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Results Section */}
+                  {threatRecord && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      
+                      {/* Left Column: Tactile Speedometer Gauge & P.R.I.M.E. Criteria */}
+                      <div className="space-y-6">
+                        <TactileGauge
+                          score={threatRecord.fuzzy_risk_score}
+                          tier={threatRecord.risk_tier}
+                        />
+
+                        {/* P.R.I.M.E. Criteria Bar Breakdown */}
+                        <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-6 shadow-tactile-card border border-tactile-border dark:border-gray-800">
+                          <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">P.R.I.M.E. Criteria Breakdown</h4>
+                          <div className="space-y-3">
+                            {[
+                              { label: 'P: Proof & Domain Identity', val: threatRecord.prime_criteria_scores?.proof_domain_identity },
+                              { label: 'R: Redirection & Obfuscation', val: threatRecord.prime_criteria_scores?.redirection_obfuscation },
+                              { label: 'I: Incentive & Urgency', val: threatRecord.prime_criteria_scores?.incentive_urgency },
+                              { label: 'M: Money & Transaction Ask', val: threatRecord.prime_criteria_scores?.money_transaction_ask },
+                              { label: 'E: Execution & Code Safety', val: threatRecord.prime_criteria_scores?.execution_code_safety },
+                              { label: 'S: Student Registry Check', val: threatRecord.prime_criteria_scores?.student_registry_check }
+                            ].map((c, i) => (
+                              <div key={i}>
+                                <div className="flex justify-between text-xs font-semibold mb-1">
+                                  <span className="text-gray-700 dark:text-gray-300">{c.label}</span>
+                                  <span className="font-mono">{c.val || 0} / 10</span>
+                                </div>
+                                <div className="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full rounded-full transition-all duration-500"
+                                    style={{
+                                      width: `${(c.val || 0) * 10}%`,
+                                      backgroundColor: (c.val || 0) > 7 ? '#EF4444' : ((c.val || 0) > 4 ? '#F59E0B' : '#10B981')
+                                    }}
+                                  ></div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right Columns: Evidence Summary & Mandatory Verification Checklist */}
+                      <div className="lg:col-span-2 space-y-6">
+                        
+                        {/* Evidence Summary Card */}
+                        <div className="bg-white dark:bg-tactile-darkcard rounded-3xl p-6 shadow-tactile-card border border-tactile-border dark:border-gray-800">
+                          <div className="flex items-center justify-between mb-3">
+                            <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                              <AlertTriangleIcon />
+                              Evidence Findings & Red Flags
+                            </h3>
+                            <span className="text-xs font-mono font-bold text-gray-400">
+                              Incident: {threatRecord.incident_id}
+                            </span>
+                          </div>
+                          <div className="space-y-2">
+                            {threatRecord.why_it_is_risky_summary.map((item, idx) => (
+                              <div key={idx} className="p-3 bg-red-50/70 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 rounded-2xl text-xs text-red-900 dark:text-red-200 flex items-start gap-2">
+                                <span className="text-red-500 font-bold">•</span>
+                                <span>{item}</span>
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Student Scam Flags Chips */}
+                          <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-wrap gap-2">
+                            {threatRecord.extracted_indicators?.student_scam_flags && Object.entries(threatRecord.extracted_indicators.student_scam_flags).map(([key, val]) => (
+                              val ? (
+                                <span key={key} className="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
+                                  🚩 {key.replace(/_/g, ' ').toUpperCase()}
+                                </span>
+                              ) : null
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Interactive Verification Checklist */}
+                        <VerificationChecklist
+                          checklist={threatRecord.verify_before_proceeding_checklist || []}
+                          incidentId={threatRecord.incident_id}
+                        />
+
+                      </div>
+
+                    </div>
+                  )}
+
+                </div>
+              )}
+
+              {activeTab === 'network' && graphData && (
+                <ThreatCorrelationCanvas graphData={graphData} />
+              )}
+
+              {activeTab === 'community' && (
+                <CommunityAndExternalPortals
+                  communityData={communityData}
+                  externalPortals={externalPortals}
+                />
+              )}
+
+            </main>
+
+            {/* Footer */}
+            <footer className="border-t border-tactile-border dark:border-gray-800 py-6 mt-12 bg-white dark:bg-tactile-darkcard">
+              <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 gap-2">
+                <span>Factora Cyber Defense Platform • Problem 1: Safety Tech — FAKE OR REAL</span>
+                <span>Powered by Calibrated ML & P.R.I.M.E. Neuro-Symbolic Engine</span>
+              </div>
+            </footer>
+
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
