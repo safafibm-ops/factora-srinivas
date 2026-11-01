@@ -530,210 +530,896 @@
     }
 
     // =========================================================================
-    // 5. Community Victim Feed & External Go-To Portals
+    // 5. Member 3: Full Integrated Community Threat Defense Hub
     // =========================================================================
     function CommunityVictimHub({ communityData, externalPortals }) {
-      const [showModal, setShowModal] = useState(false);
-      const [form, setForm] = useState({ org: '', amount: '', contact: '', desc: '' });
-      const [msg, setMsg] = useState(null);
+      const [subTab, setSubTab] = useState('feed'); // 'feed', 'graph', 'education', 'portals'
+      const [loading, setLoading] = useState(false);
+      const [dashboard, setDashboard] = useState(null);
+      const [alerts, setAlerts] = useState([]);
+      const [education, setEducation] = useState([]);
+      const [graphData, setGraphData] = useState(null);
+      const [selectedCategory, setSelectedCategory] = useState('All');
+      const [searchQuery, setSearchQuery] = useState('');
+      
+      // Modals
+      const [selectedIncident, setSelectedIncident] = useState(null);
+      const [selectedEdu, setSelectedEdu] = useState(null);
+      const [showReportModal, setShowReportModal] = useState(false);
+      const [showMyReportsModal, setShowMyReportsModal] = useState(false);
+      const [myReports, setMyReports] = useState([]);
+      const [copiedFir, setCopiedFir] = useState(false);
+      const [reportSuccess, setReportSuccess] = useState(null);
 
-      const submitReport = async (e) => {
+      // 11-field Report Form state
+      const [reportForm, setReportForm] = useState({
+        incident_title: '',
+        claimed_organization: '',
+        scam_type: 'Recruitment & Internship Fraud',
+        has_loss: false,
+        amount_demanded_or_lost_inr: '',
+        contact: '',
+        link: '',
+        github_repo: '',
+        description: '',
+        official_filed: false,
+        ack_ref: '',
+        pseudonym: ''
+      });
+
+      useEffect(() => {
+        loadData();
+      }, []);
+
+      const loadData = async () => {
+        setLoading(true);
+        try {
+          const [dRes, aRes, eRes, gRes] = await Promise.all([
+            fetch(`${API_BASE}/community/dashboard`).then(r => r.json()).catch(() => null),
+            fetch(`${API_BASE}/community/dashboard/alerts`).then(r => r.json()).catch(() => []),
+            fetch(`${API_BASE}/community/education`).then(r => r.json()).catch(() => []),
+            fetch(`${API_BASE}/community/graph?max_nodes=35`).then(r => r.json()).catch(() => null)
+          ]);
+          if (dRes) setDashboard(dRes);
+          if (aRes) setAlerts(aRes);
+          if (eRes) setEducation(eRes);
+          if (gRes) setGraphData(gRes);
+        } catch (err) {
+          console.error('Failed to load community hub data', err);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const handleInspectIncident = async (ref) => {
+        try {
+          const res = await fetch(`${API_BASE}/community/incidents/${ref}`);
+          if (res.ok) {
+            const inc = await res.json();
+            setSelectedIncident(inc);
+          }
+        } catch (err) {
+          alert('Could not load incident dossier: ' + err.message);
+        }
+      };
+
+      const handleReportSubmit = async (e) => {
         e.preventDefault();
         try {
+          const payload = {
+            incident_title: reportForm.incident_title,
+            claimed_organization: reportForm.claimed_organization,
+            scam_type: reportForm.scam_type,
+            amount_demanded_or_lost_inr: reportForm.has_loss ? (parseFloat(reportForm.amount_demanded_or_lost_inr) || 0) : 0,
+            financial_loss_occurred: reportForm.has_loss,
+            scammer_contacts: reportForm.contact ? [reportForm.contact] : [],
+            scammer_links: reportForm.link ? [reportForm.link] : [],
+            github_repo_link: reportForm.github_repo || null,
+            description: reportForm.description,
+            official_complaint_filed: reportForm.official_filed,
+            complaint_ack_ref: reportForm.ack_ref || null,
+            user_pseudonym: reportForm.pseudonym || null
+          };
+
           const res = await fetch(`${API_BASE}/community/report`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              incident_title: `Report: ${form.org}`,
-              claimed_organization: form.org,
-              scam_type: 'Campus Hiring Fraud',
-              amount_demanded_or_lost_inr: parseFloat(form.amount) || 0,
-              scammer_contacts: [form.contact],
-              scammer_links: [],
-              description: form.desc
-            })
+            body: JSON.stringify(payload)
           });
-          const d = await res.json();
-          setMsg(d.message);
-          setTimeout(() => {
-            setShowModal(false);
-            setMsg(null);
-            setForm({ org: '', amount: '', contact: '', desc: '' });
-          }, 2000);
+          const result = await res.json();
+          if (res.ok) {
+            setReportSuccess(result);
+            setMyReports(prev => [result, ...prev]);
+            loadData();
+          } else {
+            alert(result.detail || 'Failed to submit report');
+          }
         } catch (err) {
-          alert(err.message);
+          alert('Submission error: ' + err.message);
         }
+      };
+
+      const copyFir = (text) => {
+        navigator.clipboard.writeText(text);
+        setCopiedFir(true);
+        setTimeout(() => setCopiedFir(false), 2000);
+      };
+
+      // Filtered incidents
+      const incidents = (dashboard?.recent_activity || []).filter(inc => {
+        const matchesCategory = selectedCategory === 'All' || inc.category_name === selectedCategory || inc.scam_type === selectedCategory;
+        const q = searchQuery.toLowerCase();
+        const matchesSearch = !q || 
+          (inc.incident_title || '').toLowerCase().includes(q) ||
+          (inc.claimed_organization || '').toLowerCase().includes(q) ||
+          (inc.incident_ref || '').toLowerCase().includes(q) ||
+          (inc.scammer_contacts || []).some(c => c.toLowerCase().includes(q)) ||
+          (inc.scammer_links || []).some(l => l.toLowerCase().includes(q));
+        return matchesCategory && matchesSearch;
+      });
+
+      const categories = [
+        'All',
+        'Recruitment & Internship Fraud',
+        'Financial Scams',
+        'GitHub Repository & Package Risks',
+        'Website Impersonation',
+        'Phishing',
+        'Account Compromise'
+      ];
+
+      const stats = dashboard?.statistics || {
+        total_submitted_incidents: 31,
+        total_financial_loss_inr: 147700,
+        potential_threat_campaigns: 8,
+        active_community_alerts: 5
       };
 
       return (
         <div className="space-y-6">
-          {/* Top 3 Metric Strip */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl shadow-tactile-card border border-white/60 dark:border-white/5">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Campus Financial Losses</span>
-              <div className="text-3xl font-extrabold text-red-600 dark:text-red-400 mt-1 font-mono">
-                ₹{(communityData?.total_reported_money_lost_inr || 49000).toLocaleString('en-IN')}
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Direct student monetary extortion reported across colleges.</p>
+          {/* Top Sub-Navigation Pill Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-3xl bg-tactile-card dark:bg-tactile-darkcard border border-black/[0.06] dark:border-white/5 shadow-tactile-card">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {[
+                { id: 'feed', label: 'Threat Feed & Incidents', icon: Icons.Community },
+                { id: 'graph', label: 'Relationship Graph', icon: Icons.TopoGraph },
+                { id: 'education', label: 'Education Centre', icon: Icons.Shield },
+                { id: 'portals', label: 'Govt Portals (1930)', icon: Icons.External }
+              ].map(tab => {
+                const Icon = tab.icon;
+                const isActive = subTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setSubTab(tab.id)}
+                    className={`px-3.5 py-2 rounded-2xl text-xs font-bold transition-all flex items-center gap-2 ${
+                      isActive
+                        ? 'bg-tactile-obsidian text-white dark:bg-white dark:text-black shadow-keycap'
+                        : 'text-gray-500 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
+                    }`}
+                  >
+                    <Icon />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl shadow-tactile-card border border-white/60 dark:border-white/5">
-              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Victim Reports Verified</span>
-              <div className="text-3xl font-extrabold text-gray-900 dark:text-white mt-1 font-mono">
-                {communityData?.internal_victim_reports_count || 14} Incidents
-              </div>
-              <p className="text-xs text-gray-500 mt-1">Cross-referenced against college placement cells.</p>
-            </div>
-
-            <div className="p-5 bg-tactile-obsidian text-white rounded-3xl shadow-keycap flex flex-col justify-between">
-              <div>
-                <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Community Defense Network</span>
-                <h4 className="text-base font-bold mt-1">Targeted by a recruiter?</h4>
-                <p className="text-xs text-gray-300 mt-0.5">Submit proof anonymously to protect subsequent placement batches.</p>
-              </div>
-              <div className="flex items-center gap-2 mt-3">
-                <button
-                  onClick={() => setShowModal(true)}
-                  className="flex-1 px-4 py-2 rounded-full bg-white text-black text-xs font-bold hover:bg-gray-100 transition shadow-tactile-pill flex items-center justify-center gap-1.5"
-                >
-                  Log Incident →
-                </button>
-                <a
-                  href="/community"
-                  className="px-3.5 py-2 rounded-full border border-white/20 text-white text-xs font-bold hover:bg-white/10 transition flex items-center justify-center gap-1"
-                  title="Open Full From Victim to Defender Hub"
-                >
-                  <span>Full Hub</span> <Icons.ArrowUpRight />
-                </a>
-              </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowMyReportsModal(true)}
+                className="px-3.5 py-2 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs font-bold hover:bg-black/5 dark:hover:bg-white/5 transition flex items-center gap-1.5 text-gray-700 dark:text-gray-300"
+              >
+                <span>My Reports</span>
+                <span className="px-1.5 py-0.2 rounded-full bg-black/5 dark:bg-white/10 text-[10px] font-mono font-bold">
+                  {myReports.length}
+                </span>
+              </button>
+              <button
+                onClick={() => { setReportSuccess(null); setShowReportModal(true); }}
+                className="px-4 py-2 rounded-2xl bg-tactile-ember text-white text-xs font-extrabold hover:bg-tactile-emberlight transition shadow-keycap flex items-center gap-1.5"
+              >
+                <span>+ Report Scam</span>
+              </button>
             </div>
           </div>
 
-          {/* External Go-To Portals */}
-          <div className="bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] p-6 shadow-tactile-card border border-white/60 dark:border-white/5">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="p-2 rounded-2xl bg-tactile-obsidian text-white shadow-keycap">
-                <Icons.External />
-              </span>
-              <div>
-                <h3 className="text-base font-extrabold text-gray-900 dark:text-white">
-                  External "Go-To" Scam Reporting Gateways
-                </h3>
-                <p className="text-xs text-gray-500">Official government reporting and public anti-scam communities.</p>
+          {/* Top 4 Hardware Telemetry Metrics */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl shadow-tactile-card border border-white/60 dark:border-white/5">
+              <div className="flex justify-between items-center text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                <span>Total Reported</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
               </div>
+              <div className="text-3xl font-extrabold font-mono mt-2 text-gray-900 dark:text-white">
+                {stats.total_submitted_incidents || 31}
+              </div>
+              <span className="text-[11px] text-gray-400 font-medium">Campus peer submissions</span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {(externalPortals || []).map((portal, idx) => (
-                <div key={idx} className="p-4 rounded-2xl bg-[#F8F9FC] dark:bg-tactile-darksurface border border-black/[0.04] dark:border-white/5 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-sm font-bold text-gray-900 dark:text-white">{portal.portal_name}</h4>
-                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-mono">
-                        OFFICIAL
+            <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl shadow-tactile-card border border-white/60 dark:border-white/5">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Student Rupee Loss</span>
+              <div className="text-3xl font-extrabold font-mono mt-2 text-red-600 dark:text-red-400">
+                ₹{(stats.total_financial_loss_inr || 147700).toLocaleString('en-IN')}
+              </div>
+              <span className="text-[11px] text-red-500/80 font-medium">Extorted via UPI/Deposits</span>
+            </div>
+
+            <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl shadow-tactile-card border border-white/60 dark:border-white/5">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Threat Campaigns</span>
+              <div className="text-3xl font-extrabold font-mono mt-2 text-amber-500">
+                {stats.potential_threat_campaigns || 8} Rings
+              </div>
+              <span className="text-[11px] text-gray-400 font-medium">Syndicates under watch</span>
+            </div>
+
+            <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl shadow-tactile-card border border-white/60 dark:border-white/5">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Active Advisories</span>
+              <div className="text-3xl font-extrabold font-mono mt-2 text-tactile-ember">
+                {alerts.length || stats.active_community_alerts || 5} Alerts
+              </div>
+              <span className="text-[11px] text-gray-400 font-medium">Campus-wide warnings</span>
+            </div>
+          </div>
+
+          {/* Live Campus Threat Advisories Banner */}
+          {alerts.length > 0 && (
+            <div className="bg-gradient-to-r from-red-500/10 via-amber-500/10 to-transparent p-4 rounded-3xl border border-red-500/20 dark:border-red-500/30 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-red-600 dark:text-red-400">
+                  <Icons.Alert />
+                  <span className="uppercase tracking-wider">Urgent Campus Advisories</span>
+                </div>
+                <span className="text-[10px] font-mono text-gray-400">{alerts.length} Active Syndicates</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {alerts.slice(0, 2).map((a, i) => (
+                  <div key={i} className="p-3 bg-white/80 dark:bg-tactile-darkcard/80 backdrop-blur rounded-2xl border border-red-500/20 text-xs">
+                    <div className="flex items-center justify-between font-bold text-gray-900 dark:text-white">
+                      <span className="truncate max-w-[280px]">{a.alert_title || a.title}</span>
+                      <span className="text-[9px] font-mono px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300">
+                        {a.severity || 'CRITICAL'}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">{portal.external_report_summary}</p>
+                    <p className="text-[11px] text-gray-600 dark:text-gray-400 mt-1 line-clamp-2">
+                      {a.advisory_text || a.summary}
+                    </p>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/5 flex items-center justify-between">
-                    <span className="text-[11px] font-mono text-gray-400 truncate max-w-[200px]">{portal.portal_url}</span>
-                    <a
-                      href={portal.direct_report_submission_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-3.5 py-1.5 rounded-full bg-tactile-obsidian text-white dark:bg-white dark:text-black text-xs font-bold shadow-keycap flex items-center gap-1"
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* VIEW TAB 1: THREAT FEED & SEARCH */}
+          {subTab === 'feed' && (
+            <div className="space-y-5">
+              {/* Search & Category Filter Pills */}
+              <div className="space-y-3">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                    placeholder="Search incidents by recruiter name, UPI ID, phone number, spoofed domain, or keyword..."
+                    className="w-full px-5 py-3.5 rounded-2xl bg-tactile-card dark:bg-tactile-darkcard border border-black/[0.08] dark:border-white/10 text-xs text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-tactile-ember/40 shadow-sm"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-4 top-3 text-xs text-gray-400 hover:text-black dark:hover:text-white"
                     >
-                      File Report Directly <Icons.External />
-                    </a>
-                  </div>
+                      Clear
+                    </button>
+                  )}
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Campus Evidence Statements */}
-          <div className="bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] p-6 shadow-tactile-card border border-white/60 dark:border-white/5">
-            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Live Campus Evidence Ticker</h4>
-            <div className="space-y-2.5">
-              {(communityData?.victim_evidence_summaries || []).map((ev, idx) => (
-                <div key={idx} className="p-3.5 rounded-2xl bg-[#F8F9FC] dark:bg-tactile-darksurface border border-black/[0.04] dark:border-white/5 text-xs text-gray-700 dark:text-gray-300 flex items-start gap-3">
-                  <span className="text-amber-500 font-bold text-base">⚠️</span>
-                  <span className="leading-relaxed font-medium">"{ev}"</span>
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                  {categories.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`px-3 py-1.5 rounded-full whitespace-nowrap transition-all text-xs font-semibold ${
+                        selectedCategory === cat
+                          ? 'bg-tactile-obsidian text-white dark:bg-white dark:text-black shadow-keycap'
+                          : 'bg-black/5 dark:bg-white/5 text-gray-600 dark:text-gray-400 hover:bg-black/10'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          {/* Modal */}
-          {showModal && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-              <div className="bg-white dark:bg-tactile-darkcard rounded-[32px] p-6 max-w-md w-full shadow-2xl border border-black/[0.06] dark:border-white/10">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-base font-bold text-gray-900 dark:text-white">Submit Anonymous Scam Report</h3>
-                  <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+              {/* Incidents Feed */}
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-xs text-gray-400 font-bold px-1">
+                  <span>Showing {incidents.length} Verified & Corroborated Incidents</span>
+                  <span className="font-mono text-[10px]">SQLite Telemetry Synchronized</span>
                 </div>
-                {msg ? (
-                  <div className="p-4 bg-emerald-50 text-emerald-800 rounded-2xl text-center text-sm font-bold">
-                    ✓ {msg}
+
+                {incidents.length === 0 ? (
+                  <div className="p-12 text-center text-gray-400 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl border border-black/[0.06] dark:border-white/5">
+                    <p className="font-bold text-sm">No incidents match your search or filter.</p>
                   </div>
                 ) : (
-                  <form onSubmit={submitReport} className="space-y-3">
+                  incidents.map((inc) => (
+                    <div
+                      key={inc.incident_ref}
+                      className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl border border-black/[0.06] dark:border-white/5 shadow-tactile-card hover:border-tactile-ember/30 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    >
+                      <div className="space-y-1.5 flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-black/5 dark:bg-white/10 text-gray-700 dark:text-gray-300">
+                            {inc.incident_ref}
+                          </span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 font-mono">
+                            {inc.verification_status || 'VERIFIED'}
+                          </span>
+                          {inc.amount_demanded_or_lost_inr > 0 && (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-50 text-red-600 dark:bg-red-950 dark:text-red-400 font-mono">
+                              ₹{inc.amount_demanded_or_lost_inr.toLocaleString('en-IN')} Lost
+                            </span>
+                          )}
+                          <span className="text-[10px] text-gray-400 font-medium">
+                            {inc.reported_at ? inc.reported_at.substring(0, 10) : 'Recent'}
+                          </span>
+                        </div>
+
+                        <h4 className="text-sm font-extrabold text-gray-900 dark:text-white">
+                          {inc.incident_title}
+                        </h4>
+
+                        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
+                          {inc.description}
+                        </p>
+
+                        {/* Indicators Chips */}
+                        <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                          {inc.claimed_organization && (
+                            <span className="text-[10px] font-mono bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-md">
+                              Org: {inc.claimed_organization}
+                            </span>
+                          )}
+                          {(inc.scammer_contacts || []).map((c, idx) => (
+                            <span key={idx} className="text-[10px] font-mono bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded-md">
+                              📞 {c}
+                            </span>
+                          ))}
+                          {(inc.scammer_links || []).map((l, idx) => (
+                            <span key={idx} className="text-[10px] font-mono bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-md truncate max-w-[200px]">
+                              🔗 {l}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex md:flex-col items-end justify-between shrink-0 gap-2">
+                        <button
+                          onClick={() => handleInspectIncident(inc.incident_ref)}
+                          className="px-4 py-2 rounded-2xl bg-tactile-obsidian text-white dark:bg-white dark:text-black text-xs font-bold shadow-keycap hover:scale-102 transition-all flex items-center gap-1.5"
+                        >
+                          <span>Inspect Dossier</span>
+                          <Icons.ArrowUpRight />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* VIEW TAB 2: THREAT RELATIONSHIP GRAPH (Member 3 Exact Visualization) */}
+          {subTab === 'graph' && (
+            <div className="bg-tactile-card dark:bg-tactile-darkcard rounded-3xl p-6 shadow-tactile-card border border-white/60 dark:border-white/5 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-black/[0.06] dark:border-white/5">
+                <div>
+                  <h3 className="text-base font-extrabold text-gray-900 dark:text-white flex items-center gap-2">
+                    <Icons.TopoGraph />
+                    <span>Threat Entity Relationship Network</span>
+                  </h3>
+                  <p className="text-xs text-gray-500">Mathematically mapped connections across verified reports, spoofed domains, and UPI accounts.</p>
+                </div>
+                <button
+                  onClick={loadData}
+                  className="px-3 py-1.5 rounded-xl border border-black/[0.08] dark:border-white/10 text-xs font-bold hover:bg-black/5"
+                >
+                  Reload Topology
+                </button>
+              </div>
+
+              {/* Graph Legend */}
+              <div className="flex items-center gap-4 flex-wrap text-[11px] font-bold text-gray-600 dark:text-gray-400">
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-[#18191E] dark:bg-white"></span> Incident</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-[#3B82F6]"></span> Domain</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-[#F59E0B]"></span> Phone / UPI</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-[#8B5CF6]"></span> GitHub Repo</span>
+                <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-[#00E599]"></span> Campaign Ring</span>
+              </div>
+
+              {/* Render SVG Graph */}
+              <div className="w-full h-[460px] bg-tactile-canvas dark:bg-[#12141A] rounded-2xl border border-black/[0.06] dark:border-white/5 overflow-hidden flex items-center justify-center relative">
+                {graphData && graphData.nodes && graphData.nodes.length > 0 ? (
+                  <svg viewBox="0 0 800 440" className="w-full h-full select-none">
+                    {/* Compute positions */}
+                    {(() => {
+                      const width = 800;
+                      const height = 440;
+                      const centerX = width / 2;
+                      const centerY = height / 2;
+                      const radius = Math.min(width, height) * 0.38;
+                      const positions = {};
+                      graphData.nodes.forEach((n, i) => {
+                        const angle = (i / graphData.nodes.length) * 2 * Math.PI;
+                        positions[n.id] = {
+                          x: centerX + radius * Math.cos(angle),
+                          y: centerY + radius * Math.sin(angle)
+                        };
+                      });
+
+                      return (
+                        <>
+                          <g>
+                            {graphData.edges.map((e, idx) => {
+                              const s = positions[e.source];
+                              const t = positions[e.target];
+                              if (!s || !t) return null;
+                              const isHigh = e.confidence >= 0.95;
+                              return (
+                                <line
+                                  key={idx}
+                                  x1={s.x}
+                                  y1={s.y}
+                                  x2={t.x}
+                                  y2={t.y}
+                                  stroke={isHigh ? '#FF5722' : '#94A3B8'}
+                                  strokeWidth={isHigh ? 2 : 1.2}
+                                  strokeDasharray={isHigh ? undefined : '4'}
+                                  opacity="0.6"
+                                />
+                              );
+                            })}
+                          </g>
+                          <g>
+                            {graphData.nodes.map((n) => {
+                              const pos = positions[n.id];
+                              if (!pos) return null;
+                              let fill = '#18191E';
+                              let r = 16;
+                              if (n.node_type === 'domain') { fill = '#3B82F6'; r = 13; }
+                              else if (n.node_type === 'phone_upi') { fill = '#F59E0B'; r = 13; }
+                              else if (n.node_type === 'github_repo') { fill = '#8B5CF6'; r = 13; }
+                              else if (n.node_type === 'campaign') { fill = '#00E599'; r = 15; }
+
+                              const labelShort = (n.label || n.id).substring(0, 16);
+                              return (
+                                <g
+                                  key={n.id}
+                                  className="cursor-pointer hover:opacity-80"
+                                  onClick={() => {
+                                    if (n.node_type === 'incident') handleInspectIncident(n.id);
+                                    else {
+                                      setSearchQuery(n.id.replace(/^(dom|upi):/, ''));
+                                      setSubTab('feed');
+                                    }
+                                  }}
+                                >
+                                  <circle cx={pos.x} cy={pos.y} r={r} fill={fill} />
+                                  <text
+                                    x={pos.x}
+                                    y={pos.y + r + 12}
+                                    fontFamily="Plus Jakarta Sans"
+                                    fontSize="10px"
+                                    fontWeight="600"
+                                    fill="#64748B"
+                                    textAnchor="middle"
+                                  >
+                                    {labelShort}
+                                  </text>
+                                </g>
+                              );
+                            })}
+                          </g>
+                        </>
+                      );
+                    })()}
+                  </svg>
+                ) : (
+                  <div className="text-gray-400 text-xs">Computing Graph Relationships...</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* VIEW TAB 3: CYBER EDUCATION CENTRE */}
+          {subTab === 'education' && (
+            <div className="space-y-4">
+              <div className="p-4 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl border border-black/[0.06] dark:border-white/5">
+                <h3 className="text-base font-extrabold text-gray-900 dark:text-white">Cyber Defense Knowledge & Practical Prevention</h3>
+                <p className="text-xs text-gray-500 mt-1">Practical student-tailored security intelligence connected directly to live community fraud patterns.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {(education.length > 0 ? education : [
+                  { id: '1', title: 'Fake Offer Letters & Caution Deposits', short_description: 'How to verify corporate recruitment bonds and prevent advance UPI payments.' },
+                  { id: '2', title: 'Telegram Task & Crypto Rating Traps', short_description: 'Recognizing psychological grooming and fake high-yield rating scams.' },
+                  { id: '3', title: 'Malicious GitHub Interview Repositories', short_description: 'Detecting .vscode/tasks.json auto-exec traps and hidden credential harvesters.' }
+                ]).map((edu, idx) => (
+                  <div
+                    key={idx}
+                    className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl shadow-tactile-card border border-white/60 dark:border-white/5 flex flex-col justify-between"
+                  >
                     <div>
-                      <label className="text-xs font-bold text-gray-600 dark:text-gray-400">Claimed Organization</label>
+                      <span className="text-[10px] font-mono font-bold text-tactile-ember">DEFENSIVE MODULE 0{idx + 1}</span>
+                      <h4 className="text-sm font-extrabold text-gray-900 dark:text-white mt-1">{edu.title}</h4>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 leading-relaxed">{edu.short_description}</p>
+                    </div>
+                    <button
+                      onClick={() => setSelectedEdu(edu)}
+                      className="mt-4 px-3.5 py-1.5 rounded-full bg-tactile-obsidian text-white dark:bg-white dark:text-black text-xs font-bold shadow-keycap"
+                    >
+                      Read Guidance →
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* VIEW TAB 4: OFFICIAL GOVT PORTALS (1930) */}
+          {subTab === 'portals' && (
+            <div className="space-y-4">
+              <div className="p-4 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl border border-black/[0.06] dark:border-white/5">
+                <h3 className="text-base font-extrabold text-gray-900 dark:text-white">Official Government Scam Reporting Portals</h3>
+                <p className="text-xs text-gray-500 mt-1">Direct referral directory for official legal complaints, bank freezes, and institutional fraud alerts.</p>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(externalPortals || []).map((portal, idx) => (
+                  <div key={idx} className="p-5 rounded-3xl bg-tactile-card dark:bg-tactile-darkcard border border-black/[0.06] dark:border-white/5 shadow-tactile-card flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-bold text-gray-900 dark:text-white">{portal.portal_name}</h4>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-mono">
+                          GOVT OFFICIAL
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">{portal.external_report_summary}</p>
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-black/[0.06] dark:border-white/5 flex items-center justify-between">
+                      <span className="text-[11px] font-mono text-gray-400 truncate max-w-[200px]">{portal.portal_url}</span>
+                      <a
+                        href={portal.direct_report_submission_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-1.5 rounded-full bg-tactile-obsidian text-white dark:bg-white dark:text-black text-xs font-bold shadow-keycap flex items-center gap-1.5"
+                      >
+                        <span>File Directly</span>
+                        <Icons.External />
+                      </a>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* MODAL 1: INCIDENT DOSSIER & LEGAL AID FIR GENERATOR */}
+          {selectedIncident && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+              <div className="bg-white dark:bg-tactile-darkcard rounded-[32px] p-6 max-w-2xl w-full shadow-2xl border border-black/[0.08] dark:border-white/10 max-h-[90vh] overflow-y-auto space-y-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-black/5 dark:bg-white/10">
+                      {selectedIncident.incident_ref}
+                    </span>
+                    <h3 className="text-lg font-extrabold text-gray-900 dark:text-white mt-1">
+                      {selectedIncident.incident_title}
+                    </h3>
+                  </div>
+                  <button onClick={() => setSelectedIncident(null)} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04]">
+                    <span className="text-gray-400 text-[10px] uppercase font-bold block">Claimed Organization</span>
+                    <span className="font-extrabold text-gray-800 dark:text-gray-200">{selectedIncident.claimed_organization || 'Unspecified'}</span>
+                  </div>
+                  <div className="p-3 rounded-2xl bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.04]">
+                    <span className="text-gray-400 text-[10px] uppercase font-bold block">Amount Demanded/Lost</span>
+                    <span className="font-extrabold text-red-600 font-mono">Rs. {(selectedIncident.amount_demanded_or_lost_inr || 0).toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Incident Summary</h4>
+                  <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed bg-black/[0.02] dark:bg-white/[0.02] p-3 rounded-2xl border border-black/[0.04]">
+                    {selectedIncident.description}
+                  </p>
+                </div>
+
+                {/* Suspect Indicators */}
+                <div>
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Suspect Handles & Links</h4>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {(selectedIncident.scammer_contacts || []).map((c, i) => (
+                      <span key={i} className="text-xs font-mono bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 px-2.5 py-1 rounded-xl border border-amber-200/50">
+                        📞 {c}
+                      </span>
+                    ))}
+                    {(selectedIncident.scammer_links || []).map((l, i) => (
+                      <span key={i} className="text-xs font-mono bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 px-2.5 py-1 rounded-xl border border-purple-200/50">
+                        🔗 {l}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Pre-Filled FIR Complaint Draft */}
+                {selectedIncident.complaint_draft_fir && (
+                  <div className="space-y-2 pt-2">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Formal FIR Complaint Draft (IT Act 2000)</h4>
+                      <button
+                        onClick={() => copyFir(selectedIncident.complaint_draft_fir)}
+                        className="px-3 py-1 rounded-full bg-emerald-600 text-white text-xs font-bold shadow-sm hover:bg-emerald-700"
+                      >
+                        {copiedFir ? '✓ Draft Copied!' : 'Copy FIR Draft'}
+                      </button>
+                    </div>
+                    <pre className="text-[11px] font-mono bg-tactile-obsidian text-emerald-400 p-3.5 rounded-2xl overflow-x-auto max-h-48 leading-relaxed">
+                      {selectedIncident.complaint_draft_fir}
+                    </pre>
+                  </div>
+                )}
+
+                {/* Emergency Bank Freeze Checklist */}
+                {selectedIncident.emergency_freeze_checklist && selectedIncident.emergency_freeze_checklist.length > 0 && (
+                  <div className="space-y-2 pt-2">
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Emergency Freeze Checklist</h4>
+                    <div className="space-y-1.5">
+                      {selectedIncident.emergency_freeze_checklist.map((step, idx) => (
+                        <div key={idx} className="p-2.5 rounded-xl bg-red-500/10 text-xs text-red-700 dark:text-red-300 flex items-start gap-2">
+                          <span className="font-bold">✓</span>
+                          <span>{step}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* MODAL 2: REPORT INCIDENT (11 Fields) */}
+          {showReportModal && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+              <div className="bg-white dark:bg-tactile-darkcard rounded-[32px] p-6 max-w-xl w-full shadow-2xl border border-black/[0.08] dark:border-white/10 max-h-[90vh] overflow-y-auto space-y-4">
+                <div className="flex justify-between items-center pb-2 border-b border-black/[0.06] dark:border-white/5">
+                  <div>
+                    <h3 className="text-base font-extrabold text-gray-900 dark:text-white">Submit Threat Report</h3>
+                    <p className="text-xs text-gray-400">Protect peers across Indian campuses with anonymous scam intelligence.</p>
+                  </div>
+                  <button onClick={() => setShowReportModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl font-bold">&times;</button>
+                </div>
+
+                {reportSuccess ? (
+                  <div className="p-6 bg-emerald-50 dark:bg-emerald-950/40 rounded-3xl border border-emerald-200 dark:border-emerald-800 text-center space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xl font-bold mx-auto">✓</div>
+                    <h4 className="text-base font-extrabold text-emerald-900 dark:text-emerald-100">Incident Reported Successfully!</h4>
+                    <p className="text-xs text-emerald-700 dark:text-emerald-300 font-mono">
+                      Tracking ID: {reportSuccess.incident_id}
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      Your submission is pseudonymous ({reportSuccess.user_pseudonym}) and has been added to the community defense ledger.
+                    </p>
+                    <button
+                      onClick={() => setShowReportModal(false)}
+                      className="px-5 py-2 rounded-full bg-tactile-obsidian text-white dark:bg-white dark:text-black text-xs font-bold"
+                    >
+                      Done
+                    </button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleReportSubmit} className="space-y-3 text-xs">
+                    <div>
+                      <label className="font-bold text-gray-700 dark:text-gray-300">Incident Title *</label>
                       <input
                         type="text"
                         required
-                        value={form.org}
-                        onChange={e => setForm({ ...form, org: e.target.value })}
-                        placeholder="e.g. TCS Impersonation, Infosys Off-Campus"
-                        className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs text-gray-900 dark:text-white"
+                        value={reportForm.incident_title}
+                        onChange={e => setReportForm({ ...reportForm, incident_title: e.target.value })}
+                        placeholder="e.g. Fake TCS Direct Selection Laptop Deposit Scam"
+                        className="w-full mt-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs"
                       />
                     </div>
-                    <div>
-                      <label className="text-xs font-bold text-gray-600 dark:text-gray-400">Amount Demanded or Lost (INR)</label>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-bold text-gray-700 dark:text-gray-300">Claimed Organization</label>
+                        <input
+                          type="text"
+                          value={reportForm.claimed_organization}
+                          onChange={e => setReportForm({ ...reportForm, claimed_organization: e.target.value })}
+                          placeholder="e.g. Tata Consultancy Services"
+                          className="w-full mt-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-bold text-gray-700 dark:text-gray-300">Category</label>
+                        <select
+                          value={reportForm.scam_type}
+                          onChange={e => setReportForm({ ...reportForm, scam_type: e.target.value })}
+                          className="w-full mt-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs"
+                        >
+                          <option value="Recruitment & Internship Fraud">Recruitment & Internship Fraud</option>
+                          <option value="Financial Scams">Financial Scams</option>
+                          <option value="GitHub Repository & Package Risks">GitHub Repo Risks</option>
+                          <option value="Website Impersonation">Website Impersonation</option>
+                          <option value="Phishing">Phishing</option>
+                          <option value="Account Compromise">Account Compromise</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-3 bg-black/[0.02] dark:bg-white/[0.02] rounded-2xl border border-black/[0.04]">
                       <input
-                        type="number"
-                        value={form.amount}
-                        onChange={e => setForm({ ...form, amount: e.target.value })}
-                        placeholder="e.g. 3500"
-                        className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs text-gray-900 dark:text-white"
+                        type="checkbox"
+                        id="hasLossCheck"
+                        checked={reportForm.has_loss}
+                        onChange={e => setReportForm({ ...reportForm, has_loss: e.target.checked })}
+                        className="w-4 h-4 rounded text-tactile-ember"
                       />
+                      <label htmlFor="hasLossCheck" className="font-bold cursor-pointer">Did financial loss occur?</label>
+                      {reportForm.has_loss && (
+                        <input
+                          type="number"
+                          placeholder="Amount in INR (e.g. 3500)"
+                          value={reportForm.amount_demanded_or_lost_inr}
+                          onChange={e => setReportForm({ ...reportForm, amount_demanded_or_lost_inr: e.target.value })}
+                          className="flex-1 px-3 py-1.5 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs font-mono"
+                        />
+                      )}
                     </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-bold text-gray-700 dark:text-gray-300">Scammer Phone / UPI</label>
+                        <input
+                          type="text"
+                          value={reportForm.contact}
+                          onChange={e => setReportForm({ ...reportForm, contact: e.target.value })}
+                          placeholder="e.g. recruiter@oksbi"
+                          className="w-full mt-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-bold text-gray-700 dark:text-gray-300">Suspect Link / Domain</label>
+                        <input
+                          type="text"
+                          value={reportForm.link}
+                          onChange={e => setReportForm({ ...reportForm, link: e.target.value })}
+                          placeholder="e.g. bit.ly/tcs-deposit"
+                          className="w-full mt-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs"
+                        />
+                      </div>
+                    </div>
+
                     <div>
-                      <label className="text-xs font-bold text-gray-600 dark:text-gray-400">Scammer Phone / UPI / Telegram Handle</label>
+                      <label className="font-bold text-gray-700 dark:text-gray-300">GitHub Repo URL (Optional)</label>
                       <input
                         type="text"
-                        value={form.contact}
-                        onChange={e => setForm({ ...form, contact: e.target.value })}
-                        placeholder="e.g. recruiter@oksbi, +919876543210"
-                        className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs text-gray-900 dark:text-white"
+                        value={reportForm.github_repo}
+                        onChange={e => setReportForm({ ...reportForm, github_repo: e.target.value })}
+                        placeholder="e.g. https://github.com/..."
+                        className="w-full mt-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs"
                       />
                     </div>
+
                     <div>
-                      <label className="text-xs font-bold text-gray-600 dark:text-gray-400">Brief Description</label>
+                      <label className="font-bold text-gray-700 dark:text-gray-300">Description of Scam Event *</label>
                       <textarea
                         rows="3"
                         required
-                        value={form.desc}
-                        onChange={e => setForm({ ...form, desc: e.target.value })}
-                        placeholder="Explain what happened..."
-                        className="w-full mt-1 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs text-gray-900 dark:text-white"
+                        value={reportForm.description}
+                        onChange={e => setReportForm({ ...reportForm, description: e.target.value })}
+                        placeholder="Explain what the scammer claimed, what documents were sent, and what was demanded..."
+                        className="w-full mt-1 px-3.5 py-2 rounded-xl border border-gray-200 dark:border-gray-800 dark:bg-gray-900 text-xs"
                       ></textarea>
                     </div>
+
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="officialCheck"
+                        checked={reportForm.official_filed}
+                        onChange={e => setReportForm({ ...reportForm, official_filed: e.target.checked })}
+                        className="w-4 h-4 rounded text-tactile-ember"
+                      />
+                      <label htmlFor="officialCheck" className="text-gray-600 dark:text-gray-400 font-medium">Already filed official complaint at 1930 / cybercrime.gov.in?</label>
+                    </div>
+
                     <button
                       type="submit"
-                      className="w-full py-2.5 rounded-full bg-tactile-obsidian text-white dark:bg-white dark:text-black font-bold text-xs hover:opacity-90 shadow-keycap"
+                      className="w-full py-3 rounded-full bg-tactile-obsidian text-white dark:bg-white dark:text-black font-extrabold text-xs shadow-keycap hover:scale-101 transition-transform"
                     >
-                      Publish Anonymous Warning →
+                      Publish Anonymous Threat Report →
                     </button>
                   </form>
                 )}
               </div>
             </div>
           )}
+
+          {/* MODAL 3: MY SUBMISSIONS */}
+          {showMyReportsModal && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+              <div className="bg-white dark:bg-tactile-darkcard rounded-[32px] p-6 max-w-md w-full shadow-2xl border border-black/[0.08] dark:border-white/10 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-base font-extrabold text-gray-900 dark:text-white">My Submitted Reports</h3>
+                  <button onClick={() => setShowMyReportsModal(false)} className="text-gray-400 text-2xl font-bold">&times;</button>
+                </div>
+                {myReports.length === 0 ? (
+                  <p className="text-xs text-gray-400 py-6 text-center">No reports submitted from this session yet.</p>
+                ) : (
+                  <div className="space-y-2 max-h-60 overflow-y-auto">
+                    {myReports.map((r, i) => (
+                      <div key={i} className="p-3 bg-black/[0.02] dark:bg-white/[0.02] rounded-2xl border border-black/[0.04] text-xs">
+                        <div className="flex justify-between font-bold">
+                          <span className="font-mono text-tactile-ember">{r.incident_id}</span>
+                          <span className="text-emerald-600">{r.verification_status}</span>
+                        </div>
+                        <p className="text-[11px] text-gray-500 mt-1">{r.message}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* MODAL 4: EDUCATION GUIDANCE */}
+          {selectedEdu && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+              <div className="bg-white dark:bg-tactile-darkcard rounded-[32px] p-6 max-w-lg w-full shadow-2xl border border-black/[0.08] dark:border-white/10 space-y-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <span className="text-[10px] font-mono font-bold text-tactile-ember">DEFENSIVE VECTOR GUIDANCE</span>
+                    <h3 className="text-base font-extrabold text-gray-900 dark:text-white mt-1">{selectedEdu.title}</h3>
+                  </div>
+                  <button onClick={() => setSelectedEdu(null)} className="text-gray-400 text-2xl font-bold">&times;</button>
+                </div>
+                <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed bg-black/[0.02] dark:bg-white/[0.02] p-3 rounded-2xl">
+                  {selectedEdu.short_description || selectedEdu.description}
+                </p>
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Mandatory Verification Steps</h4>
+                  <div className="space-y-1.5">
+                    {(selectedEdu.defensive_actions || [
+                      'Never transfer money, caution deposits, or laptop courier fees before physical reporting.',
+                      'Cross-reference recruiter email domain with official corporate careers portal.',
+                      'Check university or scholarship registry against official UGC/AICTE directories.'
+                    ]).map((step, i) => (
+                      <div key={i} className="p-2.5 rounded-xl bg-blue-500/10 text-xs text-blue-700 dark:text-blue-300 flex items-start gap-2">
+                        <span className="font-bold">✓</span>
+                        <span>{step}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedEdu(null)}
+                  className="w-full py-2 rounded-full bg-tactile-obsidian text-white dark:bg-white dark:text-black font-bold text-xs"
+                >
+                  Close Guidance
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
+
 
     // =========================================================================
     // 6. Main App Component

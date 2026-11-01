@@ -15,9 +15,9 @@ import httpx
 from typing import Dict, Any, Optional
 
 # Configurable endpoints (via environment variables)
-AGENT1_API_URL = os.getenv("AGENT1_API_URL", "http://localhost:8001/api/analyzer")
-AGENT2_API_URL = os.getenv("AGENT2_API_URL", "http://localhost:8002/api/correlator")
-AGENT_TIMEOUT_SECONDS = float(os.getenv("AGENT_TIMEOUT_SECONDS", "2.0"))
+AGENT1_API_URL = os.getenv("AGENT1_API_URL", "http://localhost:8000/api/analyzer")
+AGENT2_API_URL = os.getenv("AGENT2_API_URL", "http://localhost:8000/api/correlator")
+AGENT_TIMEOUT_SECONDS = float(os.getenv("AGENT_TIMEOUT_SECONDS", "0.5"))
 
 
 def get_agents_config() -> Dict[str, str]:
