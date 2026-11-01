@@ -1,0 +1,200 @@
+[
+  {
+    "id": "UGC-DL-01",
+    "name": "Commercial University Ltd.",
+    "aliases": ["Commercial University", "Commercial University Daryaganj"],
+    "state": "Delhi",
+    "address": "Daryaganj, Delhi",
+    "ugc_status": "Fake University - Not recognized under Section 2(f) or 3 of the UGC Act 1956",
+    "warning": "Unauthorized institution issuing unaccredited commercial degrees."
+  },
+  {
+    "id": "UGC-DL-02",
+    "name": "United Nations University",
+    "aliases": ["United Nations University Delhi", "UN University Delhi"],
+    "state": "Delhi",
+    "address": "Delhi",
+    "ugc_status": "Fake University - Unlawful name imitation",
+    "warning": "Illegally using the name of the UN; not empowered to award Indian degrees."
+  },
+  {
+    "id": "UGC-DL-03",
+    "name": "Vocational University",
+    "aliases": ["Vocational University Delhi"],
+    "state": "Delhi",
+    "address": "Delhi",
+    "ugc_status": "Fake University - Not empowered under UGC Act",
+    "warning": "Unapproved vocational institute claiming autonomous university status."
+  },
+  {
+    "id": "UGC-DL-04",
+    "name": "ADR-Centric Juridical University",
+    "aliases": ["ADR Juridical University", "ADR Centric University"],
+    "state": "Delhi",
+    "address": "ADR House, 8/2 Kalena Agrahara, Delhi",
+    "ugc_status": "Fake University",
+    "warning": "Unrecognized legal education provider."
+  },
+  {
+    "id": "UGC-DL-05",
+    "name": "Indian Institute of Science and Engineering",
+    "aliases": ["IISE New Delhi", "Indian Inst of Science and Engineering"],
+    "state": "Delhi",
+    "address": "New Delhi",
+    "ugc_status": "Fake University",
+    "warning": "Misleading name mimicking IISc / IIT; not recognized by UGC or AICTE."
+  },
+  {
+    "id": "UGC-DL-06",
+    "name": "Viswakarma Open University for Self-Employment",
+    "aliases": ["Vishwakarma Open University", "Rozgar Sewasadan"],
+    "state": "Delhi",
+    "address": "Rozgar Sewasadan, 672, Sanjay Enclave, Opp. GTK Depot, Delhi-110033",
+    "ugc_status": "Fake University",
+    "warning": "Fraudulent open university selling employment certifications."
+  },
+  {
+    "id": "UGC-DL-07",
+    "name": "Adhyatmik Vishwavidyalaya",
+    "aliases": ["Spiritual University Rohini", "Adhyatmik Vishwavidyalaya Rohini"],
+    "state": "Delhi",
+    "address": "351-352, Phase-I, Block-A, Vijay Vihar, Rithala, Rohini, Delhi-110085",
+    "ugc_status": "Fake University",
+    "warning": "Unapproved sectarian establishment claiming university status."
+  },
+  {
+    "id": "UGC-KA-01",
+    "name": "Badaganvi Sarkar World Open University Education Society",
+    "aliases": ["Badaganvi Sarkar Open University", "World Open University Gokak"],
+    "state": "Karnataka",
+    "address": "Gokak, Belgaum, Karnataka",
+    "ugc_status": "Fake University",
+    "warning": "Unregistered society claiming world open university degree granting powers."
+  },
+  {
+    "id": "UGC-KL-01",
+    "name": "St. John's University",
+    "aliases": ["St Johns University Kishanattam", "St. John's University Kerala"],
+    "state": "Kerala",
+    "address": "Kishanattam, Kerala",
+    "ugc_status": "Fake University",
+    "warning": "Unapproved institution using Christian university title without UGC charter."
+  },
+  {
+    "id": "UGC-MH-01",
+    "name": "Raja Arabic University",
+    "aliases": ["Raja Arabic University Nagpur"],
+    "state": "Maharashtra",
+    "address": "Nagpur, Maharashtra",
+    "ugc_status": "Fake University",
+    "warning": "Unrecognized religious university issuing invalid theological degrees."
+  },
+  {
+    "id": "UGC-WB-01",
+    "name": "Indian Institute of Alternative Medicine",
+    "aliases": ["IIAM Kolkata", "Alternative Medicine Institute Kolkata"],
+    "state": "West Bengal",
+    "address": "80, Chowringhee Road, Kolkata-700020",
+    "ugc_status": "Fake University",
+    "warning": "Not empowered to grant medical or alternative medicine degrees under Indian law."
+  },
+  {
+    "id": "UGC-WB-02",
+    "name": "Institute of Alternative Medicine and Research",
+    "aliases": ["IAMR Diamond Harbour", "Alternative Medicine Research Kolkata"],
+    "state": "West Bengal",
+    "address": "8-A, Diamond Harbour Road, Builta, 24 Parganas, South, West Bengal",
+    "ugc_status": "Fake University",
+    "warning": "Bogus research body awarding unauthorized diplomas."
+  },
+  {
+    "id": "UGC-UP-01",
+    "name": "Gandhi Hindi Vidyapith",
+    "aliases": ["Gandhi Hindi Vidyapith Prayag", "Hindi Vidyapith Allahabad"],
+    "state": "Uttar Pradesh",
+    "address": "Prayag, Allahabad, Uttar Pradesh",
+    "ugc_status": "Fake University",
+    "warning": "De-recognized entity issuing unauthorized Hindi Sahitya degrees."
+  },
+  {
+    "id": "UGC-UP-02",
+    "name": "National University of Electro Complex Homeopathy",
+    "aliases": ["Electro Complex Homeopathy Kanpur"],
+    "state": "Uttar Pradesh",
+    "address": "Kanpur, Uttar Pradesh",
+    "ugc_status": "Fake University",
+    "warning": "Fraudulent medical certification without AYUSH or UGC sanction."
+  },
+  {
+    "id": "UGC-UP-03",
+    "name": "Netaji Subhash Chandra Bose University",
+    "aliases": ["Netaji Open University Aligarh"],
+    "state": "Uttar Pradesh",
+    "address": "Achaltal, Aligarh, Uttar Pradesh",
+    "ugc_status": "Fake University",
+    "warning": "Unapproved private open university operating in Aligarh."
+  },
+  {
+    "id": "UGC-UP-04",
+    "name": "Uttar Pradesh Vishwavidyalaya",
+    "aliases": ["UP Vishwavidyalaya Kosi Kalan"],
+    "state": "Uttar Pradesh",
+    "address": "Kosi Kalan, Mathura, Uttar Pradesh",
+    "ugc_status": "Fake University",
+    "warning": "Fake state university imitation."
+  },
+  {
+    "id": "UGC-UP-05",
+    "name": "Maharana Pratap Shiksha Niketan Vishwavidyalaya",
+    "aliases": ["Maharana Pratap University Pratapgarh"],
+    "state": "Uttar Pradesh",
+    "address": "Pratapgarh, Uttar Pradesh",
+    "ugc_status": "Fake University",
+    "warning": "Unregistered educational trust offering bogus degrees."
+  },
+  {
+    "id": "UGC-UP-06",
+    "name": "Indraprastha Shiksha Parishad",
+    "aliases": ["Indraprastha Shiksha Parishad Noida", "Institutional Area Khoda"],
+    "state": "Uttar Pradesh",
+    "address": "Institutional Area, Khoda, Makanpur, Noida Phase-II, UP",
+    "ugc_status": "Fake University",
+    "warning": "Operating without state assembly or UGC charter."
+  },
+  {
+    "id": "UGC-OD-01",
+    "name": "Nababharat Shiksha Parishad",
+    "aliases": ["Nababharat Shiksha Parishad Rourkela"],
+    "state": "Odisha",
+    "address": "Anupoorna Bhawan, Plot No. 242, Pani Tanki Road, Shaktinagar, Rourkela-769014",
+    "ugc_status": "Fake University",
+    "warning": "Declared fake by High Court of Orissa and UGC."
+  },
+  {
+    "id": "UGC-OD-02",
+    "name": "North Orissa University of Agriculture & Technology",
+    "aliases": ["North Orissa Agri University Mayurbhanj"],
+    "state": "Odisha",
+    "address": "Mayurbhanj, Odisha",
+    "ugc_status": "Fake University",
+    "warning": "Bogus agricultural university mimicking genuine state university."
+  },
+  {
+    "id": "UGC-AP-01",
+    "name": "Christ New Testament Deemed University",
+    "aliases": ["Christ New Testament University Guntur"],
+    "state": "Andhra Pradesh",
+    "address": "Guntur, Andhra Pradesh",
+    "ugc_status": "Fake University",
+    "warning": "Falsely claims 'Deemed University' status under Section 3 of UGC Act."
+  },
+  {
+    "id": "UGC-AP-02",
+    "name": "Bible Open University of India",
+    "aliases": ["Bible Open University Visakhapatnam"],
+    "state": "Andhra Pradesh",
+    "address": "H.No. 49-35-26, N.G.O’s Colony, Visakhapatnam, Andhra Pradesh",
+    "ugc_status": "Fake University",
+    "warning": "Unapproved open university offering non-accredited courses."
+  }
+]

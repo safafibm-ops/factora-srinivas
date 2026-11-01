@@ -19,6 +19,11 @@ This document tracks implementation status across all 4 team streams. Every memb
 ## 🔍 Stream 1: Member 1 — Agent 1 (Cyber Threat Analyzer)
 - [x] Directory and role documentation established in `/backend/agent1_analyzer/AGENTS.md`.
 - [x] Trained Agent 1 Real ML Ensemble (`Calibrated LinearSVC + XGBoost` on 32,500+ rows, ROC-AUC 0.987, F1 0.914).
+- [x] Built live URL redirect unrolling & Wayback Machine CDX API footprint analyzer.
+- [x] Connected WHOIS domain age lookup (<90 days high-risk threshold).
+- [x] Implemented Brand-to-Domain mismatch & Google Forms/Tally abuse detector.
+- [x] Created official UGC Fake Universities database & Indian student registry verifier (`scholarships.gov.in`, AICTE).
+- [x] Implemented multi-tier Screenshot OCR & Vision Entity Extractor.
 - [x] Working mock router endpoint `GET /api/analyzer/mock` active.
 - [x] Heuristic threat analysis endpoint `POST /api/analyzer/analyze` active.
 - [x] Checklist retrieval endpoint `GET /api/analyzer/checklist/{incident_id}` active.
