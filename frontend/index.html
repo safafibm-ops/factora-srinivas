@@ -801,44 +801,161 @@
         <div className={dark ? 'dark' : ''}>
           <div className="min-h-screen bg-tactile-canvas dark:bg-tactile-darkcanvas text-tactile-obsidian dark:text-gray-100 flex">
             
-            {/* Left Floating Squircle Dock (Images 1, 2, 4 & Mockup) */}
-            <aside className="w-20 hidden md:flex flex-col items-center py-6 px-3 border-r border-black/[0.06] dark:border-white/5 bg-tactile-card dark:bg-tactile-darkcard shrink-0">
-              <div className="w-11 h-11 rounded-2xl bg-tactile-obsidian dark:bg-white text-white dark:text-black flex items-center justify-center font-black text-xl shadow-keycap mb-8">
-                F
+            {/* Left Tactile Navigation Sidebar (Workflow / iDraft Style with Section Headings) */}
+            <aside className="w-64 hidden md:flex flex-col justify-between py-6 px-4 border-r border-black/[0.06] dark:border-white/5 bg-tactile-card dark:bg-tactile-darkcard shrink-0 select-none">
+              <div className="space-y-6">
+                {/* Brand Header */}
+                <div className="flex items-center gap-3 px-2">
+                  <div className="w-10 h-10 rounded-2xl bg-tactile-obsidian dark:bg-white text-white dark:text-black flex items-center justify-center font-black text-lg shadow-keycap shrink-0">
+                    F
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-extrabold text-base tracking-tight text-gray-900 dark:text-white">Factora</span>
+                      <span className="text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-tactile-ember/15 text-tactile-ember dark:bg-tactile-ember/25">PRO</span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 truncate">Autonomous Defense</span>
+                  </div>
+                </div>
+
+                {/* Navigation Sections */}
+                <nav className="space-y-5">
+                  {/* Category 1: DETECTION & ANALYSIS */}
+                  <div>
+                    <div className="text-[10px] font-extrabold tracking-wider uppercase text-gray-400 dark:text-gray-500 px-3 mb-2 flex items-center justify-between">
+                      <span>Threat Intelligence</span>
+                      <span className="text-[9px] font-mono font-semibold text-gray-400 dark:text-gray-500">AI CORE</span>
+                    </div>
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => setView('scan')}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all text-xs font-bold ${
+                          view === 'scan'
+                            ? 'bg-tactile-obsidian text-white dark:bg-white dark:text-black shadow-keycap'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icons.Shield />
+                          <span>Scanner & PRIME</span>
+                        </div>
+                        <span className={`text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded-md ${
+                          view === 'scan' ? 'bg-white/20 text-white dark:bg-black/10 dark:text-black' : 'bg-black/5 dark:bg-white/10 text-gray-500'
+                        }`}>
+                          LIVE
+                        </span>
+                      </button>
+
+                      <button
+                        onClick={() => setView('network')}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all text-xs font-bold ${
+                          view === 'network'
+                            ? 'bg-tactile-obsidian text-white dark:bg-white dark:text-black shadow-keycap'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icons.TopoGraph />
+                          <span>3D Threat Terrain</span>
+                        </div>
+                        <span className="relative flex h-2 w-2 mr-1">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-tactile-ember opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-tactile-ember"></span>
+                        </span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Category 2: COMMUNITY DEFENSE */}
+                  <div>
+                    <div className="text-[10px] font-extrabold tracking-wider uppercase text-gray-400 dark:text-gray-500 px-3 mb-2 flex items-center justify-between">
+                      <span>Community Defense</span>
+                      <span className="text-[9px] font-mono font-semibold text-emerald-600 dark:text-emerald-400">ACTIVE</span>
+                    </div>
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => setView('community')}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all text-xs font-bold ${
+                          view === 'community'
+                            ? 'bg-tactile-obsidian text-white dark:bg-white dark:text-black shadow-keycap'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icons.Community />
+                          <span>Victim Hub & Loss</span>
+                        </div>
+                        <span className={`text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded-md ${
+                          view === 'community' ? 'bg-white/20 text-white dark:bg-black/10 dark:text-black' : 'bg-red-500/10 text-red-600 dark:text-red-400'
+                        }`}>
+                          ₹49K
+                        </span>
+                      </button>
+
+                      <a
+                        href="https://cybercrime.gov.in"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all text-xs font-bold text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icons.External />
+                          <span>I4C Govt Portal</span>
+                        </div>
+                        <span className="text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-gray-500">
+                          1930
+                        </span>
+                      </a>
+                    </div>
+                  </div>
+
+                  {/* Category 3: INTEGRATIONS */}
+                  <div>
+                    <div className="text-[10px] font-extrabold tracking-wider uppercase text-gray-400 dark:text-gray-500 px-3 mb-2 flex items-center justify-between">
+                      <span>Integrations</span>
+                      <span className="text-[9px] font-mono font-semibold text-gray-400 dark:text-gray-500">3 CHANNELS</span>
+                    </div>
+                    <div className="space-y-1">
+                      <button
+                        onClick={() => setView('bots')}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all text-xs font-bold ${
+                          view === 'bots'
+                            ? 'bg-tactile-obsidian text-white dark:bg-white dark:text-black shadow-keycap'
+                            : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icons.Bot />
+                          <span>Bots & Extensions</span>
+                        </div>
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      </button>
+                    </div>
+                  </div>
+                </nav>
               </div>
 
-              <div className="flex flex-col gap-3 w-full items-center flex-1">
-                {[
-                  { id: 'scan', icon: Icons.Shield, label: 'Scanner' },
-                  { id: 'network', icon: Icons.TopoGraph, label: '3D Graph' },
-                  { id: 'community', icon: Icons.Community, label: 'Community' },
-                  { id: 'bots', icon: Icons.Bot, label: 'Bots' }
-                ].map(item => {
-                  const Icon = item.icon;
-                  const isActive = view === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => setView(item.id)}
-                      title={item.label}
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all ${
-                        isActive
-                          ? 'bg-tactile-obsidian text-white dark:bg-white dark:text-black shadow-keycap'
-                          : 'text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5'
-                      }`}
-                    >
-                      <Icon />
-                    </button>
-                  );
-                })}
-              </div>
+              {/* Bottom Controls / Status */}
+              <div className="pt-4 border-t border-black/[0.06] dark:border-white/5 space-y-2.5">
+                <button
+                  onClick={() => setDark(!dark)}
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-2xl border border-black/[0.08] dark:border-white/10 text-xs font-bold hover:bg-black/5 dark:hover:bg-white/5 transition-all text-gray-700 dark:text-gray-300 shadow-sm"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span>{dark ? '☀️' : '🌙'}</span>
+                    <span>{dark ? 'Light Ceramic' : 'Matte Obsidian'}</span>
+                  </div>
+                  <span className="text-[9px] font-mono text-gray-400 uppercase tracking-wider">{dark ? 'DAY' : 'NIGHT'}</span>
+                </button>
 
-              <button
-                onClick={() => setDark(!dark)}
-                className="w-11 h-11 rounded-2xl border border-black/[0.08] dark:border-white/10 flex items-center justify-center text-xs font-bold hover:bg-black/5 dark:hover:bg-white/5"
-              >
-                {dark ? '☀️' : '🌙'}
-              </button>
+                <div className="px-3 py-2 rounded-2xl bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.04] dark:border-white/5 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="text-[10px] font-bold text-gray-600 dark:text-gray-400">ML Engine v2.4</span>
+                  </div>
+                  <span className="text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400">0.987 AUC</span>
+                </div>
+              </div>
             </aside>
 
             {/* Main Application Content */}
@@ -1185,13 +1302,47 @@
               </main>
 
               {/* Footer */}
-              <footer className="border-t border-black/[0.06] dark:border-white/5 py-6 mt-12 bg-tactile-card dark:bg-tactile-darkcard px-8">
+              <footer className="border-t border-black/[0.06] dark:border-white/5 py-6 mt-12 bg-tactile-card dark:bg-tactile-darkcard px-8 mb-16 md:mb-0">
                 <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 gap-2">
                   <span>Factora Cyber Defense Platform • Problem 1: Safety Tech — FAKE OR REAL</span>
                   <span>Trained on 32,500+ Real Benchmark Records • Calibrated ML & P.R.I.M.E. Engine</span>
                 </div>
               </footer>
 
+            </div>
+
+            {/* Mobile Bottom Navigation Bar (md:hidden) */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-tactile-card/95 dark:bg-tactile-darkcard/95 backdrop-blur-md border-t border-black/[0.08] dark:border-white/10 px-3 py-2 flex items-center justify-around shadow-keycap">
+              {[
+                { id: 'scan', icon: Icons.Shield, label: 'Scanner' },
+                { id: 'network', icon: Icons.TopoGraph, label: '3D Graph' },
+                { id: 'community', icon: Icons.Community, label: 'Hub' },
+                { id: 'bots', icon: Icons.Bot, label: 'Bots' }
+              ].map(item => {
+                const Icon = item.icon;
+                const isActive = view === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setView(item.id)}
+                    className={`flex flex-col items-center gap-1 px-3 py-1 rounded-xl transition-all ${
+                      isActive
+                        ? 'text-tactile-ember dark:text-tactile-emberlight font-bold'
+                        : 'text-gray-400 hover:text-black dark:hover:text-white'
+                    }`}
+                  >
+                    <Icon />
+                    <span className="text-[10px]">{item.label}</span>
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => setDark(!dark)}
+                className="flex flex-col items-center gap-1 px-3 py-1 rounded-xl text-gray-400 hover:text-black dark:hover:text-white"
+              >
+                <span className="text-base">{dark ? '☀️' : '🌙'}</span>
+                <span className="text-[10px]">{dark ? 'Light' : 'Dark'}</span>
+              </button>
             </div>
           </div>
         </div>
