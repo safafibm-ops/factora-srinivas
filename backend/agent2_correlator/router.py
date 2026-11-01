@@ -66,3 +66,4 @@ async def get_incident_graph(incident_id: str) -> Dict[str, Any]:
         "edges": [edge.model_dump() for edge in record.graph_edges],
         "campaign": record.detected_campaign_name
     }
+

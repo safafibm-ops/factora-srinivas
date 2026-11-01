@@ -36,3 +36,4 @@ description: Enforces Factora shared contracts and team progress
      - Telegram/WhatsApp "task scams" (pay-per-like/rating).
      - Student money-mule / UPI rental requests.
      - Developer traps: GitHub repo assessment malware (e.g. VS Code `.vscode/tasks.json` folderOpen hooks, npm `postinstall` / `prepare` stealer scripts).
+

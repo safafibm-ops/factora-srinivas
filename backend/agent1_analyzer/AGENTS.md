@@ -53,3 +53,4 @@ Fuzzy Risk Formula synthesizes these weights into a 0–100 index mapping to:
   - `GET /api/analyzer/mock`
   - `GET /api/analyzer/checklist/{incident_id}`
   - `GET /api/analyzer/health`
+

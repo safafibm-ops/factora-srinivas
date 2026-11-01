@@ -39,3 +39,4 @@ Factora does not silo scam data—it connects users directly to verified complai
   - `GET /api/community/external-portals`
   - `POST /api/community/report`
   - `GET /api/community/health`
+

@@ -55,3 +55,4 @@ All frontend components consume endpoints from the unified FastAPI backend (`htt
 - `POST /api/community/lookup` and `GET /api/community/mock`
 - `GET /api/community/external-portals`
 - `POST /api/community/report`
+

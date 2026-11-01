@@ -137,3 +137,4 @@ async def get_verification_checklist(incident_id: str):
     """Returns the mandatory pre-action checklist for a specific incident."""
     data = get_mock_data()
     return data["threat_intelligence"].verify_before_proceeding_checklist
+

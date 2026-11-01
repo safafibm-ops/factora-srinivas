@@ -34,3 +34,4 @@ Agent 2 elevates Factora from isolated point-in-time scanning to syndicated thre
   - `GET /api/correlator/mock`
   - `GET /api/correlator/graph/{incident_id}`
   - `GET /api/correlator/health`
+
