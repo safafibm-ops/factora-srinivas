@@ -27,7 +27,7 @@ MASTER_PORTAL_CONFIGS = [
         "id": "cert_in",
         "portal_name": "CERT-In (Indian Computer Emergency Response Team)",
         "portal_url": "https://www.cert-in.org.in",
-        "base_submission_url": "https://www.cert-in.org.in/incident.jsp",
+        "base_submission_url": "https://www.cert-in.org.in/s2cMainServlet?pageid=CONTACTUS",
         "category": "technical_incident",
         "description": "National nodal agency under MeitY for reporting phishing URLs, malware payloads, and code repository attacks."
     },
@@ -69,7 +69,7 @@ MASTER_PORTAL_CONFIGS = [
         "portal_url": "https://consumerhelpline.gov.in",
         "base_submission_url": "https://consumerhelpline.gov.in/user/index.php",
         "category": "consumer_protection",
-        "description": "Redressal for fraudulent campus training institutes, fake university diploma sales, and non-refundable placement deposits."
+        "description": "Department of Consumer Affairs portal for consumer grievances. Cybercrime and financial fraud should also be reported to the National Cyber Crime Reporting Portal."
     }
 ]
 
@@ -103,21 +103,11 @@ def generate_external_portal_reports(
     target_domain = domain or "target-website.com"
     clean_domain = target_domain.replace("https://", "").replace("http://", "").split("/")[0].strip()
     
-    # Heuristic trust score estimation for presentation
-    trust_verdict = "Low Trust (High Risk)"
-    score_estimate = "1/100"
-    if clean_domain in ["tcs.com", "infosys.com", "wipro.com", "accenture.com", "google.com"]:
-        trust_verdict = "Verified Enterprise Domain (Official)"
-        score_estimate = "100/100"
-    elif any(term in clean_domain for term in ["careers-", "portal", "drive", "job", "recruitment", "online", "cc", "buzz"]):
-        trust_verdict = "Lookalike Domain Spoofing Warning"
-        score_estimate = "1/100 (Extremely High Risk)"
-
     scamadviser_url = f"https://www.scamadviser.com/check-website/{clean_domain}" if clean_domain else "https://www.scamadviser.com"
     reports.append(ExternalPortalReport(
         portal_name="ScamAdviser",
         portal_url="https://www.scamadviser.com",
-        external_report_summary=f"Automated TrustScore: {score_estimate}. Verdict: {trust_verdict}. Deep-link directly inspects domain WHOIS age and registrant privacy proxy.",
+        external_report_summary=f"Open ScamAdviser to check the reputation of {clean_domain}. Factora does not estimate or invent a ScamAdviser score.",
         direct_report_submission_url=scamadviser_url
     ))
 
@@ -125,8 +115,8 @@ def generate_external_portal_reports(
     reports.append(ExternalPortalReport(
         portal_name="CERT-In (Indian Computer Emergency Response Team)",
         portal_url="https://www.cert-in.org.in",
-        external_report_summary="Active national advisory regarding campus fake recruitment campaigns, phishing links, and student credential harvesting.",
-        direct_report_submission_url="https://www.cert-in.org.in/incident.jsp"
+        external_report_summary="CERT-In incident reporting contact page. Reports can be sent to its incident response desk; follow the official instructions on the page.",
+        direct_report_submission_url="https://www.cert-in.org.in/s2cMainServlet?pageid=CONTACTUS"
     ))
 
     # 4. Reddit r/Scams Community
@@ -136,7 +126,7 @@ def generate_external_portal_reports(
     reports.append(ExternalPortalReport(
         portal_name="Reddit r/Scams & Community Alert Threads",
         portal_url="https://www.reddit.com/r/Scams/",
-        external_report_summary=f"Active community discussions and victim testimonials for '{search_query}'. Shows how other students identified this pattern.",
+        external_report_summary=f"Search public r/Scams discussions for '{search_query} job scam'. Community posts are anecdotal and should be independently verified.",
         direct_report_submission_url=reddit_search_url
     ))
 
@@ -145,7 +135,7 @@ def generate_external_portal_reports(
         reports.append(ExternalPortalReport(
             portal_name="NPCI Official UPI Dispute Redressal Portal",
             portal_url="https://www.npci.org.in",
-            external_report_summary="Direct mechanism under National Payments Corporation of India to report fraudulent beneficiary VPAs and demand emergency transaction reversal.",
+            external_report_summary="Official UPI dispute guidance. Start a transaction grievance in your UPI app or with your bank; use the listed escalation path if it remains unresolved.",
             direct_report_submission_url="https://www.npci.org.in/what-we-do/upi/dispute-redressal-mechanism"
         ))
 

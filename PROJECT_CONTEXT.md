@@ -87,6 +87,10 @@ Create the bot with Telegram's `@BotFather`, then set these Render environment v
 
 On service startup, Factora registers the HTTPS webhook with Telegram. `/api/telegram/health` reports whether required settings are present. Private chats support text, PNG/JPEG/WebP images, and text-based PDFs up to 20 MB. Image scans rely on the existing OCR runtime; image/PDF files with no readable text receive a request for clearer input instead of a fabricated verdict. PDFs must have selectable text. Bot handling uses the local models and does not send message contents to optional third-party LLM providers.
 
+### Optional isolated link preview
+
+The analyzer can display a screenshot captured by Browserless in a remote browser. It never embeds the suspicious page in the student's browser and the target page is not opened on the Factora server. Set `BROWSERLESS_TOKEN` in the server environment to enable this feature; the default REST endpoint is `https://production-sfo.browserless.io/screenshot`. `BROWSERLESS_SCREENSHOT_ENDPOINT` can override the endpoint for a different Browserless region or a compatible private service. The preview route accepts only URLs extracted into that scan, applies a per-client request limit, rejects local/private literal addresses, and returns a bounded PNG. Without the token, the UI reports that isolated preview is not configured. Browserless is an external service and receives the URL; avoid previewing links containing private access tokens or personal data. A screenshot is not a safety verdict.
+
 The live community UI uses `GET /api/community/recent?days=30` and `GET /api/community/graph/model?days=30`. `/api/community/report` persists new student submissions; Agent 2 then compares those reports when the live graph is refreshed. Reports with concrete shared indicators are shown separately from model-only similarity candidates. The current live feed excludes the original seeded demo fixtures; set `FACTORA_SEED_DEMO_DATA=true` only when demo seeding is intentionally wanted on a new empty database.
 
 ## Browser extension and deployed API

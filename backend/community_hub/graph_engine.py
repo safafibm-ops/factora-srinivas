@@ -293,6 +293,7 @@ def build_community_threat_graph(
 def build_recent_model_correlation_graph(days: int = 30, max_nodes: int = 80) -> Dict[str, Any]:
     """Compare recent live community reports with Agent 2 and return explainable graph links."""
     from backend.agent2_correlator.router import get_engine
+    from backend.community_hub.external_threat_feed import get_openphish_graph_data
 
     days = max(1, min(int(days), 30))
     max_nodes = max(5, min(int(max_nodes), 120))
@@ -314,11 +315,30 @@ def build_recent_model_correlation_graph(days: int = 30, max_nodes: int = 80) ->
         if engine.model is None:
             raise RuntimeError("Agent 2 correlation model is not loaded.")
     except Exception as exc:
+        community_nodes = []
+        community_details = {}
+        for row in rows:
+            ref = row["incident_ref"]
+            amount = float(row["amount_demanded_or_lost_inr"] or 0)
+            lost = bool(row["financial_loss_occurred"])
+            community_nodes.append({"id": ref, "label": (row["incident_title"] or ref)[:48], "node_type": "incident"})
+            community_details[ref] = {
+                "entity_name": row["incident_title"] or ref,
+                "details": f"Community-submitted report · {row['scam_type'] or 'Unspecified category'} · {row['reported_at'] or 'date unavailable'}" + (f" · reported loss ₹{amount:,.0f}" if lost else " · no financial loss reported"),
+                "source_name": "Factora Community Reports",
+                "source_url": f"/api/community/dashboard/incident/{ref}",
+                "source_type": "community_report",
+            }
+        external = get_openphish_graph_data(max_nodes=max_nodes - len(community_nodes))
         return {
-            "status": "degraded", "source": "live_community_reports", "window_days": days,
+            "status": "degraded", "source": "community_reports_plus_openphish", "window_days": days,
             "generated_at": generated_at, "model": {"status": "unavailable", "name": "Agent 2 Correlator", "error": str(exc)},
-            "nodes": [], "edges": [], "correlations": [],
-            "summary": {"reports_in_window": len(rows), "connected_pairs": 0, "message": "The correlation model is unavailable; no relationships were inferred."},
+            "nodes": community_nodes + external["nodes"], "edges": external["edges"], "correlations": [],
+            "node_details": {**community_details, **external["node_details"]},
+            "external_feed": external["feed"],
+            "summary": {"reports_in_window": len(rows), "connected_pairs": 0, "shared_indicator_pairs": 0,
+                        "similarity_candidates": 0, "external_feed_entries": external["feed"]["count"],
+                        "message": "Agent 2 is unavailable, so no community relationships were inferred. OpenPhish feed entries are shown separately."},
         }
 
     truncated_reports = len(rows) > report_limit
@@ -350,12 +370,29 @@ def build_recent_model_correlation_graph(days: int = 30, max_nodes: int = 80) ->
             "node_type": "incident",
         }
 
+    node_details: Dict[str, Dict[str, Any]] = {}
+    for report in reports:
+        row = report["row"]
+        ref = row["incident_ref"]
+        amount = float(row.get("amount_demanded_or_lost_inr") or 0)
+        lost = bool(row.get("financial_loss_occurred"))
+        node_details[ref] = {
+            "entity_name": row.get("incident_title") or ref,
+            "details": f"Community-submitted report · {row.get('scam_type') or 'Unspecified category'} · {row.get('reported_at') or 'date unavailable'}" + (f" · reported loss ₹{amount:,.0f}" if lost else " · no financial loss reported"),
+            "source_name": "Factora Community Reports",
+            "source_url": f"/api/community/dashboard/incident/{ref}",
+            "source_type": "community_report",
+        }
+
+    external = get_openphish_graph_data(max_nodes=max_nodes // 3)
+    community_node_limit = max(0, max_nodes - len(external["nodes"]))
+
     generic_domains = {"bit.ly", "t.me", "telegram.org", "github.com", "forms.gle", "google.com"}
     for index, left in enumerate(reports):
-        if len(nodes) >= max_nodes:
+        if len(nodes) >= community_node_limit:
             break
         for right in reports[index + 1:]:
-            if len(nodes) >= max_nodes or len(edges) >= 160:
+            if len(nodes) >= community_node_limit or len(edges) >= 160:
                 break
             a = left["row"]
             b = right["row"]
@@ -407,7 +444,7 @@ def build_recent_model_correlation_graph(days: int = 30, max_nodes: int = 80) ->
                 for value in exact_values:
                     digest = hashlib.sha256(value.lower().encode("utf-8")).hexdigest()[:18]
                     entity_id = f"indicator:{digest}"
-                    if entity_id not in nodes and len(nodes) < max_nodes:
+                    if entity_id not in nodes and len(nodes) < community_node_limit:
                         if value in shared_domains:
                             node_type = "domain"
                         elif value in shared_repos:
@@ -415,6 +452,13 @@ def build_recent_model_correlation_graph(days: int = 30, max_nodes: int = 80) ->
                         else:
                             node_type = "phone_upi"
                         nodes[entity_id] = {"id": entity_id, "label": mask_contact(value) if value in shared_contacts else value, "node_type": node_type}
+                        node_details[entity_id] = {
+                            "entity_name": mask_contact(value) if value in shared_contacts else value,
+                            "details": f"Exact indicator reported in multiple community incidents ({a['incident_ref']} and {b['incident_ref']}). A shared indicator is evidence to review; it does not by itself prove common ownership.",
+                            "source_name": "Factora Community Reports",
+                            "source_url": f"/api/community/dashboard/incident/{a['incident_ref']}",
+                            "source_type": "community_report",
+                        }
                     for incident in (a["incident_ref"], b["incident_ref"]):
                         key = f"{incident}:{entity_id}"
                         if entity_id in nodes and key not in seen_edges:
@@ -426,15 +470,31 @@ def build_recent_model_correlation_graph(days: int = 30, max_nodes: int = 80) ->
                     seen_edges.add(key)
                     edges.append({"source": a["incident_ref"], "target": b["incident_ref"], "relationship": match_type, "confidence": round(relationship_confidence, 3)})
 
+    # Connect only exact host matches. Similar or sibling domains are not joined.
+    external_domain_ids = {node["label"].lower(): node["id"] for node in external["nodes"] if node["node_type"] == "external_phishing_domain"}
+    for report in reports:
+        ref = report["row"]["incident_ref"]
+        for domain in report["indicators"]["domains"]:
+            external_id = external_domain_ids.get(domain.lower().rstrip("."))
+            if external_id:
+                key = f"{ref}:{external_id}:exact_external_domain_match"
+                if key not in seen_edges:
+                    seen_edges.add(key)
+                    edges.append({"source": ref, "target": external_id, "relationship": "exact_external_domain_match", "confidence": 1.0})
+                    node_details[ref]["details"] += " An exact reported domain also appears in the OpenPhish feed."
+    nodes.update({node["id"]: node for node in external["nodes"]})
+    node_details.update(external["node_details"])
     return {
-        "status": "success", "source": "live_community_reports", "window_days": days,
+        "status": "success", "source": "community_reports_plus_openphish", "window_days": days,
         "generated_at": generated_at,
         "model": {"status": "loaded", "name": "Agent 2 trained correlation model"},
-        "nodes": list(nodes.values()), "edges": edges, "correlations": correlations,
+        "nodes": list(nodes.values()), "edges": external["edges"] + edges, "correlations": correlations,
+        "node_details": node_details, "external_feed": external["feed"],
         "summary": {
             "reports_in_window": len(reports), "connected_pairs": len(correlations),
             "shared_indicator_pairs": sum(1 for match in correlations if match["match_type"] == "shared_indicator"),
             "similarity_candidates": sum(1 for match in correlations if match["match_type"] == "model_similarity_candidate"),
+            "external_feed_entries": external["feed"]["count"],
             "truncated": truncated_reports or len(nodes) >= max_nodes,
             "message": "Model similarity links are leads for review; they do not prove common ownership or fraud." if correlations else "No sufficiently strong links were found among live reports in this date window.",
         },

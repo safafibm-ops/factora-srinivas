@@ -1128,20 +1128,15 @@ def get_dashboard_statistics() -> Dict[str, Any]:
 
         cursor = conn.cursor()
 
-        # Total incidents & total financial loss
-
+        period_start = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
         cursor.execute("""
-
-        SELECT 
-
-            COUNT(*) AS total_incidents,
-
-            COALESCE(SUM(amount_demanded_or_lost_inr), 0.0) AS total_lost_inr
-
-        FROM victim_reports
-
-        """)
-
+            SELECT COUNT(*) AS total_incidents,
+                   COALESCE(SUM(CASE WHEN financial_loss_occurred = 1 THEN amount_demanded_or_lost_inr ELSE 0 END), 0.0) AS total_lost_inr,
+                   SUM(CASE WHEN UPPER(verification_status) IN ('CORROBORATED', 'CONFIRMED') OR is_verified = 1 THEN 1 ELSE 0 END) AS corroborated_count,
+                   COUNT(DISTINCT CASE WHEN campaign_name IS NOT NULL AND campaign_name != '' AND campaign_name != 'Under Automated Correlation' THEN campaign_name END) AS campaign_count
+            FROM victim_reports
+            WHERE data_source = 'community' AND reported_at >= ?
+        """, (period_start,))
         totals = dict(cursor.fetchone())
 
         # Newly reported incidents (within past 7 days based on reported_at)
@@ -1154,81 +1149,33 @@ def get_dashboard_statistics() -> Dict[str, Any]:
 
         FROM victim_reports
 
-        WHERE reported_at >= ?
+        WHERE data_source = 'community' AND reported_at >= ?
 
         """, (seven_days_ago,))
 
         new_row = dict(cursor.fetchone())
 
-        # Corroborated reports (verified / corroborated status)
-
-        cursor.execute("""
-
-        SELECT COUNT(*) AS corroborated_count
-
-        FROM victim_reports
-
-        WHERE verification_status = 'Corroborated' OR is_verified = 1
-
-        """)
-
-        corroborated_row = dict(cursor.fetchone())
-
-        # Potential threat campaigns (distinct campaign names excluding NULL / unclassified)
-
-        cursor.execute("""
-
-        SELECT COUNT(DISTINCT campaign_name) AS campaign_count
-
-        FROM victim_reports
-
-        WHERE campaign_name IS NOT NULL AND campaign_name != '' AND campaign_name != 'Under Automated Correlation'
-
-        """)
-
-        campaign_row = dict(cursor.fetchone())
-
-        # Active community alerts (calculated based on high-risk clusters + syndicated campaigns)
-
-        cursor.execute("""
-
-        SELECT COUNT(*) as alert_count
-
-        FROM (
-
-            SELECT campaign_name, COUNT(*) as cnt
-
-            FROM victim_reports
-
-            WHERE campaign_name IS NOT NULL AND campaign_name != ''
-
-            GROUP BY campaign_name
-
-            HAVING cnt >= 2
-
-        )
-
-        """)
-
-        alert_cluster = dict(cursor.fetchone())
-
-        # Ensure at least 5 active alerts based on verified syndicate intelligence
-
-        active_alerts = max(alert_cluster["alert_count"] + 1, 5)
+        try:
+            from backend.community_hub.threat_alerts import generate_dynamic_community_alerts
+            active_alerts = len(generate_dynamic_community_alerts())
+        except Exception:
+            active_alerts = 0
 
         return {
 
             "total_submitted_incidents": totals["total_incidents"],
 
-            "newly_reported_incidents": max(new_row["new_incidents"], 6),
+            "newly_reported_incidents": int(new_row["new_incidents"] or 0),
 
-            "corroborated_reports": corroborated_row["corroborated_count"],
+            "corroborated_reports": int(totals["corroborated_count"] or 0),
 
-            "potential_threat_campaigns": max(campaign_row["campaign_count"], 4),
+            "potential_threat_campaigns": int(totals["campaign_count"] or 0),
 
             "active_community_alerts": active_alerts,
 
-            "total_financial_loss_inr": totals["total_lost_inr"]
+            "total_financial_loss_inr": float(totals["total_lost_inr"] or 0),
+            "period_days": 30,
+            "data_source": "community_reports_only"
 
         }
 
@@ -1438,7 +1385,7 @@ def get_recent_community_snapshot(days: int = 30, limit: int = 50) -> Dict[str, 
         cursor = conn.cursor()
         cursor.execute("""
             SELECT COUNT(*) AS total,
-                   COALESCE(SUM(amount_demanded_or_lost_inr), 0) AS losses,
+                   COALESCE(SUM(CASE WHEN financial_loss_occurred = 1 THEN amount_demanded_or_lost_inr ELSE 0 END), 0) AS losses,
                    SUM(CASE WHEN UPPER(verification_status) IN ('CORROBORATED', 'CONFIRMED') OR is_verified = 1 THEN 1 ELSE 0 END) AS corroborated,
                    COUNT(DISTINCT CASE WHEN campaign_name IS NOT NULL AND campaign_name != '' AND campaign_name != 'Under Automated Correlation' THEN campaign_name END) AS campaigns
             FROM victim_reports
@@ -1477,6 +1424,9 @@ def get_recent_community_snapshot(days: int = 30, limit: int = 50) -> Dict[str, 
                 "corroborated_reports": int(totals.get("corroborated") or 0),
                 "potential_threat_campaigns": int(totals.get("campaigns") or 0),
                 "total_financial_loss_inr": float(totals.get("losses") or 0),
+                "active_community_alerts": 0,
+                "period_days": days,
+                "data_source": "community_reports_only",
             },
             "recent_activity": activity,
         }
@@ -1924,67 +1874,8 @@ def get_full_dashboard_state() -> Dict[str, Any]:
 
         cursor = conn.cursor()
 
-        # 1. Statistics
-
-        cursor.execute("""
-
-        SELECT 
-
-            COUNT(*) AS total_incidents,
-
-            COALESCE(SUM(amount_demanded_or_lost_inr), 0.0) AS total_lost_inr
-
-        FROM victim_reports
-
-        """)
-
-        totals = dict(cursor.fetchone())
-
-        seven_days_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d %H:%M:%S")
-
-        cursor.execute("SELECT COUNT(*) AS new_incidents FROM victim_reports WHERE reported_at >= ?", (seven_days_ago,))
-
-        new_row = dict(cursor.fetchone())
-
-        cursor.execute("SELECT COUNT(*) AS corroborated_count FROM victim_reports WHERE verification_status = 'Corroborated' OR is_verified = 1")
-
-        corroborated_row = dict(cursor.fetchone())
-
-        cursor.execute("SELECT COUNT(DISTINCT campaign_name) AS campaign_count FROM victim_reports WHERE campaign_name IS NOT NULL AND campaign_name != '' AND campaign_name != 'Under Automated Correlation'")
-
-        campaign_row = dict(cursor.fetchone())
-
-        cursor.execute("""
-
-        SELECT COUNT(*) as alert_count FROM (
-
-            SELECT campaign_name, COUNT(*) as cnt FROM victim_reports
-
-            WHERE campaign_name IS NOT NULL AND campaign_name != '' GROUP BY campaign_name HAVING cnt >= 2
-
-        )
-
-        """)
-
-        alert_cluster = dict(cursor.fetchone())
-
-        active_alerts = max(alert_cluster["alert_count"] + 1, 5)
-
-        stats = {
-
-            "total_submitted_incidents": totals["total_incidents"],
-
-            "newly_reported_incidents": max(new_row["new_incidents"], 6),
-
-            "corroborated_reports": corroborated_row["corroborated_count"],
-
-            "potential_threat_campaigns": max(campaign_row["campaign_count"], 4),
-
-            "active_community_alerts": active_alerts,
-
-            "total_financial_loss_inr": totals["total_lost_inr"]
-
-        }
+        # 1. Statistics use only actual community reports and confirmed losses.
+        stats = get_dashboard_statistics()
 
         # 2. Categories
 

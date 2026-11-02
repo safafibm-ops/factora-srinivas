@@ -123,7 +123,7 @@ def generate_dynamic_community_alerts() -> List[Dict[str, Any]]:
             for r in incident_rows:
                 cat = r["category"] or r["scam_type"]
                 cat_counts[cat] = cat_counts.get(cat, 0) + 1
-                amt = float(r["amount_demanded_or_lost_inr"] or 0.0)
+                amt = float(r["amount_demanded_or_lost_inr"] or 0.0) if bool(r["financial_loss_occurred"]) else 0.0
                 total_lost += amt
                 r_date = r["reported_at"]
                 if r_date > latest_date:

@@ -82,6 +82,15 @@
     .deck-layer-1 { transform: translateY(0) scale(1); z-index: 30; }
     .deck-layer-2 { transform: translateY(8px) scale(0.96); z-index: 20; opacity: 0.9; }
     .deck-layer-3 { transform: translateY(16px) scale(0.92); z-index: 10; opacity: 0.75; }
+    @keyframes sandboxBackdropIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes sandboxWindowIn { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes sandboxBackdropOut { from { opacity: 1; } to { opacity: 0; } }
+    @keyframes sandboxWindowOut { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(12px) scale(.98); } }
+    .sandbox-backdrop { animation: sandboxBackdropIn .22s ease-out both; }
+    .sandbox-window { animation: sandboxWindowIn .28s cubic-bezier(.2,.8,.2,1) both; }
+    .sandbox-closing { animation: sandboxBackdropOut .18s ease-in both; }
+    .sandbox-closing .sandbox-window { animation: sandboxWindowOut .18s ease-in both; }
+    @media (prefers-reduced-motion: reduce) { .sandbox-backdrop, .sandbox-window, .sandbox-closing, .sandbox-closing .sandbox-window { animation-duration: .01ms; } }
   </style>
 </head>
 <body class="min-h-screen">
@@ -225,6 +234,9 @@
     // 2. 3D Stacked Card Deck (Image 3 "Shiela Young" & Approved Mockup)
     // =========================================================================
     function StackedCardDeck({ claimedOrg, domainMismatch, officialDomain }) {
+      const [showClaimedIdentity, setShowClaimedIdentity] = useState(true);
+      const organization = claimedOrg || 'Organization not specified';
+      const domain = officialDomain || 'Domain not provided';
       return (
         <div className="relative h-44 flex items-center justify-center p-2">
           {/* Layer 3 (Deepest) */}
@@ -238,26 +250,26 @@
             <div className="flex items-center gap-3">
               <div className="relative">
                 <div className="w-12 h-12 rounded-2xl bg-tactile-obsidian text-white flex items-center justify-center font-black text-lg shadow-keycap">
-                  {claimedOrg ? claimedOrg[0] : 'T'}
+                  {showClaimedIdentity ? organization[0] : '…'}
                 </div>
                 <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-black"></span>
               </div>
               <div>
                 <h4 className="text-sm font-extrabold text-gray-900 dark:text-white leading-tight">
-                  {claimedOrg || 'Tata Consultancy Services'}
+                  {showClaimedIdentity ? organization : 'Claimed sender hidden'}
                 </h4>
                 <span className="text-[11px] font-mono font-bold text-gray-500 dark:text-gray-400">
-                  {domainMismatch ? '⚠️ Domain Spoof Detected' : '✓ Verified Brand Entity'}
+                  {domainMismatch ? '⚠️ Domain Spoof Detected' : 'Claimed identity · not independently verified'}
                 </span>
                 <div className="mt-1 text-[10px] text-gray-400 font-mono">
-                  Official: {officialDomain || 'tcs.com'}
+                  {showClaimedIdentity ? `Claimed domain: ${domain}` : 'Identity details hidden'}
                 </div>
               </div>
             </div>
 
             <div className="flex flex-col items-center gap-1 text-gray-400">
-              <button className="p-1 hover:text-black dark:hover:text-white">▲</button>
-              <button className="p-1 hover:text-black dark:hover:text-white">▼</button>
+              <button type="button" aria-label="Show claimed organization details" onClick={() => setShowClaimedIdentity(true)} className="p-1 hover:text-black dark:hover:text-white">▲</button>
+              <button type="button" aria-label="Hide claimed organization details" onClick={() => setShowClaimedIdentity(false)} className="p-1 hover:text-black dark:hover:text-white">▼</button>
             </div>
           </div>
         </div>
@@ -269,6 +281,27 @@
     // =========================================================================
     function TopographicEmberGraph({ graphData }) {
       const canvasRef = useRef(null);
+      const [selectedNodeId, setSelectedNodeId] = useState(null);
+      const selectedNode = graphData?.nodes?.find(node => node.id === selectedNodeId) || null;
+      const selectedDetails = selectedNode ? graphData?.node_details?.[selectedNode.id] : null;
+
+      const selectCanvasNode = (event) => {
+        const canvas = canvasRef.current;
+        const nodes = graphData?.nodes || [];
+        if (!canvas || !nodes.length) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = (event.clientX - rect.left) * canvas.width / rect.width;
+        const y = (event.clientY - rect.top) * canvas.height / rect.height;
+        const radiusX = Math.min(canvas.width * 0.39, 280);
+        const radiusY = Math.min(canvas.height * 0.35, 125);
+        const nearest = nodes.map((node, index) => {
+          const angle = (index / nodes.length) * Math.PI * 2 - Math.PI / 2;
+          const nx = canvas.width / 2 + Math.cos(angle) * radiusX;
+          const ny = canvas.height / 2 + Math.sin(angle) * radiusY;
+          return { node, distance: Math.hypot(nx - x, ny - y) };
+        }).sort((a, b) => a.distance - b.distance)[0];
+        if (nearest?.distance <= 24) setSelectedNodeId(nearest.node.id);
+      };
 
       useEffect(() => {
         const canvas = canvasRef.current;
@@ -373,7 +406,8 @@
             ctx.arc(pos.x, pos.y, 14, 0, Math.PI * 2);
             ctx.fillStyle = n.node_type === 'incident' ? '#EF4444'
               : (n.node_type === 'phone_upi' ? '#FF9500'
-              : (n.node_type === 'github_repo' ? '#8B5CF6' : '#3B82F6'));
+              : (n.node_type === 'github_repo' ? '#8B5CF6'
+              : (n.node_type === 'external_phishing_url' ? '#FF5722' : '#3B82F6')));
             ctx.fill();
 
             // Specular Rim
@@ -408,7 +442,7 @@
                 </h3>
               </div>
               <p className="text-xs text-gray-500 mt-1">
-              Live community reports from the last 30 days, correlated by Agent 2. Similarity is a review lead, not proof.
+              Live community reports and the OpenPhish community feed. The sources remain distinct; model similarity is a review lead, not proof.
               </p>
             </div>
 
@@ -421,7 +455,7 @@
           </div>
 
           <div className="rounded-2xl overflow-hidden border border-black/5 dark:border-white/5 bg-[#0D0F14] flex justify-center shadow-inner relative">
-            <canvas ref={canvasRef} width="720" height="370" className="w-full max-w-[720px] h-auto"></canvas>
+            <canvas ref={canvasRef} width="720" height="370" onClick={selectCanvasNode} className="w-full max-w-[720px] h-auto cursor-pointer"></canvas>
             {(!graphData || graphData.nodes?.length === 0) && (
               <div className="absolute inset-x-6 top-1/2 -translate-y-1/2 text-center text-xs text-gray-400">
                 {graphData?.summary?.message || 'Loading live community reports and Agent 2 correlations…'}
@@ -429,8 +463,24 @@
             )}
           </div>
 
+          {selectedNode && (
+            <div className="mt-3 p-4 bg-tactile-canvas dark:bg-tactile-darksurface rounded-2xl border border-black/[0.06] dark:border-white/5 text-xs">
+              <div className="font-bold text-gray-900 dark:text-white">{selectedDetails?.entity_name || selectedNode.label}</div>
+              <p className="mt-1 text-gray-600 dark:text-gray-300">{selectedDetails?.details || 'No additional details are available for this graph entity.'}</p>
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <span className="text-gray-500">Source: {selectedDetails?.source_name || 'Source unavailable'}</span>
+                {selectedDetails?.source_url && <a href={selectedDetails.source_url} target="_blank" rel="noopener noreferrer" className="font-bold text-tactile-ember hover:underline">Open source ↗</a>}
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-gray-500 dark:text-gray-400">
             <span>{graphData?.summary?.reports_in_window ?? 0} live reports · {graphData?.summary?.connected_pairs ?? 0} linked pairs</span>
+            <span className={graphData?.external_feed?.error && !graphData?.external_feed?.count ? 'text-amber-600 dark:text-amber-400' : ''}>
+              {graphData?.external_feed?.error && !graphData?.external_feed?.count
+                ? 'OpenPhish feed unavailable'
+                : `${graphData?.external_feed?.count ?? 0} external OpenPhish entries${graphData?.external_feed?.stale ? ' · cached' : ''} · not community reports`}
+            </span>
             <span className={graphData?.model?.status === 'loaded' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
               {graphData?.model?.status === 'loaded' ? 'Agent 2 model active' : 'Agent 2 unavailable'}
             </span>
@@ -551,6 +601,7 @@
       const [alerts, setAlerts] = useState([]);
       const [education, setEducation] = useState([]);
       const [graphData, setGraphData] = useState(null);
+      const [selectedGraphNodeId, setSelectedGraphNodeId] = useState(null);
       const [selectedCategory, setSelectedCategory] = useState('All');
       const [searchQuery, setSearchQuery] = useState('');
       
@@ -769,7 +820,7 @@
               <div className="text-3xl font-extrabold font-mono mt-2 text-gray-900 dark:text-white">
                 {stats.total_submitted_incidents ?? 0}
               </div>
-              <span className="text-[11px] text-gray-400 font-medium">Reports · past 30 days</span>
+              <span className="text-[11px] text-gray-400 font-medium">Community reports · past 30 days</span>
             </div>
 
             <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl shadow-tactile-card border border-white/60 dark:border-white/5">
@@ -777,7 +828,7 @@
               <div className="text-3xl font-extrabold font-mono mt-2 text-red-600 dark:text-red-400">
                 ₹{(stats.total_financial_loss_inr ?? 0).toLocaleString('en-IN')}
               </div>
-              <span className="text-[11px] text-red-500/80 font-medium">Extorted via UPI/Deposits</span>
+              <span className="text-[11px] text-red-500/80 font-medium">Confirmed losses · community reports</span>
             </div>
 
             <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl shadow-tactile-card border border-white/60 dark:border-white/5">
@@ -785,15 +836,15 @@
               <div className="text-3xl font-extrabold font-mono mt-2 text-amber-500">
                 {stats.potential_threat_campaigns ?? 0} Rings
               </div>
-              <span className="text-[11px] text-gray-400 font-medium">Syndicates under watch</span>
+              <span className="text-[11px] text-gray-400 font-medium">Named campaigns · community reports</span>
             </div>
 
             <div className="p-5 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl shadow-tactile-card border border-white/60 dark:border-white/5">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Active Advisories</span>
               <div className="text-3xl font-extrabold font-mono mt-2 text-tactile-ember">
-                {alerts.length ?? stats.active_community_alerts ?? 0} Alerts
+                {(Array.isArray(alerts) ? alerts.length : stats.active_community_alerts) ?? 0} Alerts
               </div>
-              <span className="text-[11px] text-gray-400 font-medium">Campus-wide warnings</span>
+              <span className="text-[11px] text-gray-400 font-medium">Evidence-based community alerts</span>
             </div>
           </div>
 
@@ -1021,10 +1072,11 @@
                               if (!pos) return null;
                               let fill = '#18191E';
                               let r = 16;
-                              if (n.node_type === 'domain') { fill = '#3B82F6'; r = 13; }
+                              if (n.node_type === 'domain' || n.node_type === 'external_phishing_domain') { fill = '#3B82F6'; r = 13; }
                               else if (n.node_type === 'phone_upi') { fill = '#F59E0B'; r = 13; }
                               else if (n.node_type === 'github_repo') { fill = '#8B5CF6'; r = 13; }
                               else if (n.node_type === 'campaign') { fill = '#00E599'; r = 15; }
+                              else if (n.node_type === 'external_phishing_url') { fill = '#FF5722'; r = 13; }
 
                               const labelShort = (n.label || n.id).substring(0, 16);
                               return (
@@ -1032,11 +1084,8 @@
                                   key={n.id}
                                   className="cursor-pointer hover:opacity-80"
                                   onClick={() => {
+                                    setSelectedGraphNodeId(n.id);
                                     if (n.node_type === 'incident') handleInspectIncident(n.id);
-                                    else {
-                                      setSearchQuery(n.id.replace(/^(dom|upi):/, ''));
-                                      setSubTab('feed');
-                                    }
                                   }}
                                 >
                                   <circle cx={pos.x} cy={pos.y} r={r} fill={fill} />
@@ -1064,10 +1113,29 @@
                 )}
               </div>
 
+              {selectedGraphNodeId && (() => {
+                const selected = graphData?.nodes?.find(node => node.id === selectedGraphNodeId);
+                const details = graphData?.node_details?.[selectedGraphNodeId];
+                if (!selected) return null;
+                return (
+                  <div className="p-4 bg-tactile-canvas dark:bg-tactile-darksurface rounded-2xl border border-black/[0.06] dark:border-white/5 text-xs">
+                    <div className="font-bold text-gray-900 dark:text-white">{details?.entity_name || selected.label}</div>
+                    <p className="mt-1 text-gray-600 dark:text-gray-300">{details?.details || 'No additional details are available for this graph entity.'}</p>
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      <span className="text-gray-500">Source: {details?.source_name || 'Source unavailable'}</span>
+                      {details?.source_url && <a href={details.source_url} target="_blank" rel="noopener noreferrer" className="font-bold text-tactile-ember hover:underline">Open source ↗</a>}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="flex flex-wrap gap-3 text-[11px] text-gray-500 dark:text-gray-400">
                 <span>{graphData?.summary?.reports_in_window ?? 0} reports in window</span>
                 <span>{graphData?.summary?.shared_indicator_pairs ?? 0} shared indicator links</span>
                 <span>{graphData?.summary?.similarity_candidates ?? 0} model similarity leads</span>
+                <span className={graphData?.external_feed?.error && !graphData?.external_feed?.count ? 'text-amber-600 dark:text-amber-400' : ''}>
+                  {graphData?.external_feed?.error && !graphData?.external_feed?.count ? 'OpenPhish feed unavailable' : `${graphData?.external_feed?.count ?? 0} external OpenPhish entries (separate)`}
+                </span>
                 <span className={graphData?.model?.status === 'loaded' ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}>
                   {graphData?.model?.status === 'loaded' ? 'Agent 2 model active' : 'Agent 2 unavailable'}
                 </span>
@@ -1131,8 +1199,8 @@
           {subTab === 'portals' && (
             <div className="space-y-4">
               <div className="p-4 bg-tactile-card dark:bg-tactile-darkcard rounded-3xl border border-black/[0.06] dark:border-white/5">
-                <h3 className="text-base font-extrabold text-gray-900 dark:text-white">Official Government Scam Reporting Portals</h3>
-                <p className="text-xs text-gray-500 mt-1">Direct referral directory for official legal complaints, bank freezes, and institutional fraud alerts.</p>
+                <h3 className="text-base font-extrabold text-gray-900 dark:text-white">Reporting & Threat Intelligence Portals</h3>
+                <p className="text-xs text-gray-500 mt-1">Verified reporting destinations and external intelligence services. Filing requirements are set by each destination.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1142,7 +1210,7 @@
                       <div className="flex items-center justify-between">
                         <h4 className="text-sm font-bold text-gray-900 dark:text-white">{portal.portal_name}</h4>
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300 font-mono">
-                          GOVT OFFICIAL
+                          {/Reddit|community/i.test(portal.portal_name) ? 'COMMUNITY' : /URLhaus|OpenPhish/i.test(portal.portal_name) ? 'THREAT INTEL' : /ScamAdviser/i.test(portal.portal_name) ? 'DOMAIN CHECK' : 'OFFICIAL PORTAL'}
                         </span>
                       </div>
                       <p className="text-xs text-gray-600 dark:text-gray-400 mt-2">{portal.external_report_summary}</p>
@@ -1155,7 +1223,7 @@
                         rel="noopener noreferrer"
                         className="px-4 py-1.5 rounded-full bg-tactile-obsidian text-white dark:bg-white dark:text-black text-xs font-bold shadow-keycap flex items-center gap-1.5"
                       >
-                        <span>File Directly</span>
+                        <span>{/ScamAdviser|Reddit|URLhaus/i.test(portal.portal_name) ? 'Open service' : 'File Directly'}</span>
                         <Icons.External />
                       </a>
                     </div>
@@ -1496,10 +1564,13 @@
 
       const [loading, setLoading] = useState(false);
       const [threat, setThreat] = useState(null);
+      const [analysisIsLive, setAnalysisIsLive] = useState(false);
       const [graph, setGraph] = useState(null);
       const [comm, setComm] = useState(null);
       const [portals, setPortals] = useState([]);
       const [dark, setDark] = useState(false);
+      const [sandboxPreview, setSandboxPreview] = useState(null);
+      const [sandboxClosing, setSandboxClosing] = useState(false);
       const [modelStatus, setModelStatus] = useState({ analyzer: false, correlator: false, analyzerError: null, correlatorError: null, checked: false });
       const [telegramBotUrl, setTelegramBotUrl] = useState(null);
 
@@ -1531,6 +1602,7 @@
 
       const handleAnalyze = async () => {
         setLoading(true);
+        setAnalysisIsLive(false);
         try {
           const payload = {
             input_text: mode === 'text' ? text : null,
@@ -1547,6 +1619,7 @@
           const d = await res.json();
           if (!res.ok) throw new Error(d.detail || `Analyzer request failed (${res.status})`);
           setThreat(d);
+          setAnalysisIsLive(true);
 
           const cRes = await fetch(`${API_BASE}/correlator/correlate`, {
             method: 'POST',
@@ -1565,6 +1638,25 @@
           setLoading(false);
         }
       };
+
+      const openSandboxPreview = async (targetUrl) => {
+        setSandboxClosing(false);
+        setSandboxPreview({ url: targetUrl, loading: true, result: null, error: null });
+        try {
+          const response = await fetch(`${API_BASE}/analyzer/isolated-preview/${encodeURIComponent(threat.incident_id)}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url: targetUrl })
+          });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.detail || `Preview failed (${response.status})`);
+          setSandboxPreview(current => current ? { ...current, loading: false, result } : current);
+        } catch (error) {
+          setSandboxPreview(current => current ? { ...current, loading: false, error: error.message } : current);
+        }
+      };
+
+      const closeSandboxPreview = () => setSandboxClosing(true);
 
       const loadDemo = (type) => {
         if (type === 'tcs') {
@@ -1905,7 +1997,7 @@
                             <StackedCardDeck
                               claimedOrg={threat.extracted_indicators?.claimed_organization}
                               domainMismatch={threat.extracted_indicators?.official_domain_mismatch}
-                              officialDomain="tcs.com"
+                              officialDomain={threat.extracted_indicators?.domains?.[0]}
                             />
                           </div>
 
@@ -1974,6 +2066,19 @@
                                 ) : null
                               ))}
                             </div>
+
+                            {analysisIsLive && (threat.extracted_indicators?.urls || []).length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-black/[0.06] dark:border-white/5 space-y-2">
+                                <div className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Links found · remote isolated preview</div>
+                                {(threat.extracted_indicators.urls).map((targetUrl, index) => (
+                                  <div key={`${targetUrl}-${index}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl bg-black/[0.025] dark:bg-white/[0.035] px-3 py-2">
+                                    <span className="min-w-0 truncate text-[11px] font-mono text-gray-600 dark:text-gray-300" title={targetUrl}>{targetUrl}</span>
+                                    <button type="button" onClick={() => openSandboxPreview(targetUrl)} className="shrink-0 px-3 py-2 rounded-xl bg-tactile-obsidian text-white dark:bg-white/10 dark:text-white text-[11px] font-bold hover:opacity-90 transition">Preview safely ↗</button>
+                                  </div>
+                                ))}
+                                <p className="text-[10px] leading-relaxed text-gray-500">The page is rendered in a remote disposable browser and shown here as an image. It is never opened in this device’s browser. A preview is not a safety verdict.</p>
+                              </div>
+                            )}
                           </div>
 
                           {/* Mandatory Verification Checklist */}
@@ -2072,6 +2177,30 @@
               </footer>
 
             </div>
+
+            {sandboxPreview && (
+              <div className={`sandbox-backdrop fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 backdrop-blur-sm p-3 sm:p-6 ${sandboxClosing ? 'sandbox-closing' : ''}`} onClick={event => { if (event.target === event.currentTarget) closeSandboxPreview(); }} onAnimationEnd={event => { if (event.target === event.currentTarget && sandboxClosing) { setSandboxPreview(null); setSandboxClosing(false); } }}>
+                <section role="dialog" aria-modal="true" aria-label="Remote isolated link preview" className="sandbox-window w-full max-w-4xl max-h-[92vh] overflow-hidden rounded-3xl bg-tactile-card dark:bg-tactile-darkcard border border-black/[0.08] dark:border-white/10 shadow-2xl flex flex-col">
+                  <header className="flex items-start justify-between gap-4 px-5 py-4 border-b border-black/[0.06] dark:border-white/10">
+                    <div className="min-w-0">
+                      <h2 className="font-bold text-sm text-gray-900 dark:text-white">Remote isolated preview</h2>
+                      <p className="mt-1 truncate font-mono text-[10px] text-gray-500 dark:text-gray-400">{sandboxPreview.result?.final_url || sandboxPreview.url}</p>
+                    </div>
+                    <button type="button" aria-label="Close preview" onClick={closeSandboxPreview} className="shrink-0 rounded-xl px-3 py-1 text-2xl leading-none text-gray-500 hover:bg-black/5 dark:hover:bg-white/10">×</button>
+                  </header>
+                  <div className="overflow-auto p-4 sm:p-5">
+                    {sandboxPreview.loading && <div className="min-h-64 flex flex-col items-center justify-center gap-3 text-sm text-gray-500"><span className="w-8 h-8 rounded-full border-2 border-tactile-ember border-t-transparent animate-spin"></span>Opening the link in a remote disposable browser…</div>}
+                    {sandboxPreview.error && <div role="alert" className="rounded-2xl border border-amber-500/20 bg-amber-50 dark:bg-amber-950/20 p-4 text-sm text-amber-800 dark:text-amber-200">{sandboxPreview.error}</div>}
+                    {sandboxPreview.result && <>
+                      <div className="mb-3 flex flex-wrap items-center gap-2 text-[10px] font-bold text-emerald-700 dark:text-emerald-300"><span className="w-2 h-2 rounded-full bg-emerald-500"></span> Captured in remote browser{sandboxPreview.result.page_status ? ` · page returned ${sandboxPreview.result.page_status}` : ''}</div>
+                      <img src={sandboxPreview.result.image_data_url} alt="Website screenshot captured in a remote disposable browser" className="block max-h-[58vh] w-full rounded-xl border border-black/10 dark:border-white/10 bg-white object-contain" />
+                      <p className="mt-3 text-[10px] leading-relaxed text-gray-500 dark:text-gray-400">{sandboxPreview.result.notice}</p>
+                    </>}
+                  </div>
+                  <footer className="flex justify-end px-5 py-3 border-t border-black/[0.06] dark:border-white/10"><button type="button" onClick={closeSandboxPreview} className="px-4 py-2 rounded-xl bg-tactile-obsidian text-white dark:bg-white/10 text-xs font-bold">Close preview</button></footer>
+                </section>
+              </div>
+            )}
 
             {/* Mobile Bottom Navigation Bar (md:hidden) */}
             <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-tactile-card/95 dark:bg-tactile-darkcard/95 backdrop-blur-md border-t border-black/[0.08] dark:border-white/10 px-3 py-2 flex items-center justify-around shadow-keycap">
