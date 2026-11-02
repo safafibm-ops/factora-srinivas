@@ -7,6 +7,7 @@ browser or Factora's backend. The app only receives a bounded PNG screenshot.
 from __future__ import annotations
 
 import base64
+from io import BytesIO
 import ipaddress
 import os
 import re
@@ -17,6 +18,7 @@ from typing import Deque, Dict
 from urllib.parse import urlsplit
 
 import requests
+from PIL import Image, ImageStat
 
 MAX_SCREENSHOT_BYTES = 5 * 1024 * 1024
 PREVIEW_TIMEOUT_SECONDS = 35
@@ -88,7 +90,14 @@ def capture_isolated_preview(url: str) -> dict:
                 "url": url,
                 "bestAttempt": True,
                 "gotoOptions": {"waitUntil": "domcontentloaded", "timeout": 20000},
-                "options": {"type": "png", "fullPage": False},
+                # Many modern pages render their visible UI after the initial
+                # document event. Give hydration and client-side rendering time.
+                "waitForTimeout": 5000,
+                "options": {
+                    "type": "png",
+                    "fullPage": False,
+                    "viewport": {"width": 1365, "height": 900},
+                },
             },
             headers={"Cache-Control": "no-cache"},
             timeout=(5, PREVIEW_TIMEOUT_SECONDS),
@@ -122,12 +131,28 @@ def capture_isolated_preview(url: str) -> dict:
         if not image.startswith(b"\x89PNG\r\n\x1a\n"):
             raise PreviewError("The isolated browser returned an invalid image.", 502)
 
+        try:
+            with Image.open(BytesIO(image)) as screenshot:
+                sample = screenshot.convert("RGB")
+                sample.thumbnail((32, 32))
+                deviations = ImageStat.Stat(sample).stddev
+                likely_blank = max(deviations, default=0.0) < 2.0
+        except Exception:
+            likely_blank = False
+
         return {
             "status": "captured",
             "requested_url": url,
             "final_url": response.headers.get("X-Response-URL") or url,
             "page_status": response.headers.get("X-Response-Code"),
+            "failed_resources": response.headers.get("X-Failed-Resource-Count"),
+            "failed_stylesheets": response.headers.get("X-Failed-Stylesheet-Count"),
+            "likely_blank": likely_blank,
             "image_data_url": "data:image/png;base64," + base64.b64encode(image).decode("ascii"),
             "isolation": "remote_disposable_browser",
-            "notice": "This is a visual preview from a remote disposable browser. The page may still be deceptive; the screenshot does not certify the site as safe.",
+            "notice": (
+                "The remote browser loaded the URL but captured an almost blank screen. The site may require sign-in, block remote browsers, or need interaction to render. No page content was available to show."
+                if likely_blank else
+                "This is a visual preview from a remote disposable browser. The page may still be deceptive; the screenshot does not certify the site as safe."
+            ),
         }
