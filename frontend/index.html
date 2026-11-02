@@ -582,6 +582,93 @@
     // =========================================================================
     // 5. Member 3: Full Integrated Community Threat Defense Hub
     // =========================================================================
+    function MakeThemProveIt({ threat }) {
+      const [draftedQuestions, setDraftedQuestions] = useState([]);
+      const [recruiterReply, setRecruiterReply] = useState('');
+      const [replySignals, setReplySignals] = useState(null);
+      const [copied, setCopied] = useState(false);
+      const questions = [
+        'Could you email me from your official company email address?',
+        'What is the job ID, and where is it listed on your official careers page?',
+        'Please confirm there is no fee, deposit, or payment required at any stage.'
+      ];
+      const replyQuestions = (index) => setDraftedQuestions(current => current.includes(index) ? current : [...current, index]);
+      const copyQuestions = async () => {
+        const text = draftedQuestions.map(index => questions[index]).join('\n');
+        if (!text) return;
+        try {
+          await navigator.clipboard.writeText(text);
+          setCopied(true);
+          window.setTimeout(() => setCopied(false), 1800);
+        } catch (_) {
+          setCopied(false);
+        }
+      };
+      const reviewReply = () => {
+        const text = recruiterReply.trim();
+        if (!text) return;
+        const payment = /\b(fee|deposit|registration charge|processing charge|pay|payment|transfer|upi|security amount)\b/i.test(text);
+        const pressure = /\b(today|immediately|urgent|last\s+\d+\s+seats?|limited\s+slots?|don't contact|do not contact|keep this confidential)\b/i.test(text);
+        const evasive = /\b(can't share|cannot share|not available|later|trust me|no need to verify)\b/i.test(text);
+        const upi = text.match(/[\w.\-]+@(?:okhdfcbank|oksbi|okaxis|ybl|paytm|upi|ibl|axl)\b/i)?.[0] || null;
+        setReplySignals({ payment, pressure, evasive, upi });
+      };
+
+      return (
+        <section className="bg-tactile-card dark:bg-tactile-darkcard rounded-[32px] p-6 shadow-tactile-card dark:shadow-tactile-darkcard border border-amber-500/20 dark:border-amber-400/15 space-y-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 text-[10px] font-extrabold uppercase tracking-wider">Uncertain result</span>
+                <span className="text-[10px] text-gray-400 font-mono">UI PREVIEW</span>
+              </div>
+              <h3 className="mt-2 text-base font-extrabold text-gray-900 dark:text-white">Make Them Prove It</h3>
+              <p className="mt-1 text-xs leading-relaxed text-gray-600 dark:text-gray-400">Prepare calm verification questions as a keen candidate. Nothing is sent to the recruiter automatically.</p>
+            </div>
+            <span className="text-[10px] font-bold text-gray-400">No-contact mode</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr] gap-4">
+            <div className="space-y-2">
+              <p className="text-[11px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Choose questions to ask</p>
+              {questions.map((question, index) => (
+                <button key={question} type="button" onClick={() => replyQuestions(index)} className={`w-full text-left p-3 rounded-2xl border text-xs leading-relaxed transition ${draftedQuestions.includes(index) ? 'border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-200' : 'border-black/[0.06] dark:border-white/10 bg-[#F8F9FC] dark:bg-tactile-darksurface text-gray-800 dark:text-gray-200 hover:border-amber-500/40'}`}>
+                  <span className="mr-2 font-bold">{draftedQuestions.includes(index) ? '✓' : '+'}</span>{question}
+                </button>
+              ))}
+              <button type="button" onClick={copyQuestions} disabled={!draftedQuestions.length} className="px-4 py-2 rounded-xl bg-tactile-obsidian text-white dark:bg-white/10 text-[11px] font-bold disabled:opacity-40">{copied ? 'Questions copied' : 'Copy selected questions'}</button>
+            </div>
+
+            <div className="rounded-2xl border border-black/[0.06] dark:border-white/10 bg-[#F8F9FC] dark:bg-tactile-darksurface p-4 flex flex-col min-h-[260px]">
+              <div className="flex justify-between items-center border-b border-black/[0.06] dark:border-white/10 pb-3">
+                <span className="text-xs font-bold text-gray-900 dark:text-white">Candidate assistant</span>
+                <span className="text-[10px] text-gray-400">Draft conversation</span>
+              </div>
+              <div className="flex-1 py-3 space-y-2">
+                <div className="max-w-[92%] rounded-2xl rounded-tl-sm bg-white dark:bg-[#17191F] border border-black/[0.05] dark:border-white/5 p-3 text-[11px] leading-relaxed text-gray-600 dark:text-gray-300">I’m interested in the opportunity. I’ll verify the role through official channels before sharing documents or making a payment.</div>
+                {draftedQuestions.map(index => <div key={index} className="ml-auto max-w-[92%] rounded-2xl rounded-tr-sm bg-amber-100/80 dark:bg-amber-950/40 p-3 text-[11px] leading-relaxed text-gray-800 dark:text-amber-100">{questions[index]}</div>)}
+                {!draftedQuestions.length && <p className="text-[10px] text-gray-400">Select a question to add it to this local preview.</p>}
+              </div>
+              <label className="text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1" htmlFor="proof-recruiter-reply">Paste the recruiter’s reply to preview warning signals</label>
+              <textarea id="proof-recruiter-reply" value={recruiterReply} onChange={event => { setRecruiterReply(event.target.value); setReplySignals(null); }} rows="2" placeholder="Paste a reply here — it stays in this page preview." className="w-full resize-y rounded-xl bg-white dark:bg-[#17191F] border border-black/[0.08] dark:border-white/10 p-3 text-xs text-gray-900 dark:text-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-500/30" />
+              <button type="button" onClick={reviewReply} disabled={!recruiterReply.trim()} className="mt-2 self-end px-4 py-2 rounded-xl bg-tactile-obsidian text-white dark:bg-white/10 text-[11px] font-bold disabled:opacity-40">Preview reply signals</button>
+              {replySignals && (
+                <div role="status" className="mt-3 p-3 rounded-xl border border-amber-500/20 bg-amber-50 dark:bg-amber-950/20 text-[11px] text-gray-700 dark:text-gray-200 space-y-1">
+                  <p className="font-bold">Local keyword preview — not an AI verdict</p>
+                  <p>{[replySignals.payment && 'Payment language', replySignals.pressure && 'Urgency or secrecy', replySignals.evasive && 'Verification avoidance'].filter(Boolean).join(' · ') || 'No listed warning phrases detected. This does not verify the recruiter.'}</p>
+                  {replySignals.upi && <p className="font-mono">UPI-like ID detected: {replySignals.upi}</p>}
+                  <p className="text-gray-500 dark:text-gray-400">Not sent, saved, or reported. Use the community report or official cybercrime portal to submit information.</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    // =========================================================================
+    // 5. Member 3: Full Integrated Community Threat Defense Hub
+    // =========================================================================
     function CommunityVictimHub({ communityData, externalPortals }) {
       const [subTab, setSubTab] = useState('feed'); // 'feed', 'graph', 'education', 'portals'
       const [loading, setLoading] = useState(false);
@@ -2085,6 +2172,10 @@
                               </div>
                             )}
                           </div>
+
+                          {Math.max(threat.fuzzy_risk_score || 0, highestLinkScore?.score || 0) >= 20 && Math.max(threat.fuzzy_risk_score || 0, highestLinkScore?.score || 0) < 70 && (
+                            <MakeThemProveIt threat={threat} />
+                          )}
 
                           {/* Mandatory Verification Checklist */}
                           <VerificationChecklist
