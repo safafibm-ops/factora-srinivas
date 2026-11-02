@@ -82,15 +82,6 @@
     .deck-layer-1 { transform: translateY(0) scale(1); z-index: 30; }
     .deck-layer-2 { transform: translateY(8px) scale(0.96); z-index: 20; opacity: 0.9; }
     .deck-layer-3 { transform: translateY(16px) scale(0.92); z-index: 10; opacity: 0.75; }
-    @keyframes sandboxBackdropIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes sandboxWindowIn { from { opacity: 0; transform: translateY(18px) scale(.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
-    @keyframes sandboxBackdropOut { from { opacity: 1; } to { opacity: 0; } }
-    @keyframes sandboxWindowOut { from { opacity: 1; transform: translateY(0) scale(1); } to { opacity: 0; transform: translateY(12px) scale(.98); } }
-    .sandbox-backdrop { animation: sandboxBackdropIn .22s ease-out both; }
-    .sandbox-window { animation: sandboxWindowIn .28s cubic-bezier(.2,.8,.2,1) both; }
-    .sandbox-closing { animation: sandboxBackdropOut .18s ease-in both; }
-    .sandbox-closing .sandbox-window { animation: sandboxWindowOut .18s ease-in both; }
-    @media (prefers-reduced-motion: reduce) { .sandbox-backdrop, .sandbox-window, .sandbox-closing, .sandbox-closing .sandbox-window { animation-duration: .01ms; } }
   </style>
 </head>
 <body class="min-h-screen">
@@ -576,9 +567,6 @@
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 leading-relaxed">
-                      <strong className="text-gray-800 dark:text-gray-100">Why it matters:</strong> {step.why_it_matters}
-                    </p>
                     <div className="mt-2.5 text-xs font-mono bg-white dark:bg-[#131418] p-2.5 rounded-xl border border-black/[0.06] dark:border-white/5 text-gray-800 dark:text-gray-200">
                       👉 {step.action_url_or_instruction}
                     </div>
@@ -1024,29 +1012,60 @@
               </div>
 
               {/* Render SVG Graph */}
-              <div className="w-full h-[460px] bg-tactile-canvas dark:bg-[#12141A] rounded-2xl border border-black/[0.06] dark:border-white/5 overflow-hidden flex items-center justify-center relative">
+              <div className="w-full h-[560px] bg-tactile-canvas dark:bg-[#12141A] rounded-2xl border border-black/[0.06] dark:border-white/5 overflow-hidden flex items-center justify-center relative">
                 {graphData && graphData.nodes && graphData.nodes.length > 0 ? (
-                  <svg viewBox="0 0 800 440" className="w-full h-full select-none">
+                  <svg viewBox="0 0 1200 700" className="w-full h-full select-none">
                     {/* Compute positions */}
                     {(() => {
-                      const width = 800;
-                      const height = 440;
+                      const width = 1200;
+                      const height = 700;
                       const centerX = width / 2;
                       const centerY = height / 2;
-                      const radius = Math.min(width, height) * 0.38;
                       const positions = {};
-                      graphData.nodes.forEach((n, i) => {
-                        const angle = (i / graphData.nodes.length) * 2 * Math.PI;
-                        positions[n.id] = {
-                          x: centerX + radius * Math.cos(angle),
-                          y: centerY + radius * Math.sin(angle)
-                        };
+                      const nodes = graphData.nodes;
+                      const edges = graphData.edges || [];
+                      const columns = Math.max(2, Math.ceil(Math.sqrt(nodes.length * width / height)));
+                      const rows = Math.ceil(nodes.length / columns);
+                      const colGap = (width - 160) / columns;
+                      const rowGap = (height - 120) / Math.max(1, rows);
+                      nodes.forEach((n, i) => {
+                        const col = i % columns;
+                        const row = Math.floor(i / columns);
+                        positions[n.id] = { x: 80 + colGap * (col + 0.5), y: 60 + rowGap * (row + 0.5) };
                       });
+                      // Deterministic force relaxation: connected nodes attract;
+                      // all nodes repel to leave readable space between labels.
+                      for (let pass = 0; pass < 90; pass++) {
+                        const movement = {};
+                        nodes.forEach(n => { movement[n.id] = { x: 0, y: 0 }; });
+                        for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+                          const a = positions[nodes[i].id], b = positions[nodes[j].id];
+                          let dx = b.x - a.x, dy = b.y - a.y;
+                          const d = Math.max(1, Math.hypot(dx, dy));
+                          const force = Math.min(6, 1800 / (d * d));
+                          dx = dx / d * force; dy = dy / d * force;
+                          movement[nodes[i].id].x -= dx; movement[nodes[i].id].y -= dy;
+                          movement[nodes[j].id].x += dx; movement[nodes[j].id].y += dy;
+                        }
+                        edges.forEach(e => {
+                          const a = positions[e.source], b = positions[e.target];
+                          if (!a || !b) return;
+                          const dx = b.x - a.x, dy = b.y - a.y, d = Math.max(1, Math.hypot(dx, dy));
+                          const force = Math.min(0.8, d * 0.0015);
+                          movement[e.source].x += dx / d * force; movement[e.source].y += dy / d * force;
+                          movement[e.target].x -= dx / d * force; movement[e.target].y -= dy / d * force;
+                        });
+                        nodes.forEach(n => {
+                          const p = positions[n.id], m = movement[n.id];
+                              p.x = Math.max(50, Math.min(width - 50, p.x + Math.max(-7, Math.min(7, m.x)) * 0.55));
+                              p.y = Math.max(42, Math.min(height - 42, p.y + Math.max(-7, Math.min(7, m.y)) * 0.55));
+                        });
+                      }
 
                       return (
                         <>
                           <g>
-                            {graphData.edges.map((e, idx) => {
+                            {(graphData.edges || []).map((e, idx) => {
                               const s = positions[e.source];
                               const t = positions[e.target];
                               if (!s || !t) return null;
@@ -1078,7 +1097,8 @@
                               else if (n.node_type === 'campaign') { fill = '#00E599'; r = 15; }
                               else if (n.node_type === 'external_phishing_url') { fill = '#FF5722'; r = 13; }
 
-                              const labelShort = (n.label || n.id).substring(0, 16);
+                              const label = n.label || n.id;
+                              const labelShort = label.length > 22 ? `${label.substring(0, 20)}…` : label;
                               return (
                                 <g
                                   key={n.id}
@@ -1093,7 +1113,7 @@
                                     x={pos.x}
                                     y={pos.y + r + 12}
                                     fontFamily="Plus Jakarta Sans"
-                                    fontSize="10px"
+                                    fontSize="11px"
                                     fontWeight="600"
                                     fill="#64748B"
                                     textAnchor="middle"
@@ -1569,8 +1589,8 @@
       const [comm, setComm] = useState(null);
       const [portals, setPortals] = useState([]);
       const [dark, setDark] = useState(false);
-      const [sandboxPreview, setSandboxPreview] = useState(null);
-      const [sandboxClosing, setSandboxClosing] = useState(false);
+      const [linkScoreResult, setLinkScoreResult] = useState(null);
+      const [highestLinkScore, setHighestLinkScore] = useState(null);
       const [modelStatus, setModelStatus] = useState({ analyzer: false, correlator: false, analyzerError: null, correlatorError: null, checked: false });
       const [telegramBotUrl, setTelegramBotUrl] = useState(null);
 
@@ -1591,18 +1611,11 @@
         })).catch(() => setModelStatus({ analyzer: false, correlator: false, analyzerError: 'Health check failed', correlatorError: 'Health check failed', checked: true }));
       }, []);
 
-      useEffect(() => {
-        if (view !== 'network') return;
-        const refreshLiveTerrain = () => fetch(`${API_BASE}/community/graph/model?days=30&max_nodes=36`)
-          .then(r => r.ok ? r.json() : null).then(d => setGraph(d)).catch(() => setGraph(null));
-        refreshLiveTerrain();
-        const timer = window.setInterval(refreshLiveTerrain, 60_000);
-        return () => window.clearInterval(timer);
-      }, [view]);
-
       const handleAnalyze = async () => {
         setLoading(true);
         setAnalysisIsLive(false);
+        setLinkScoreResult(null);
+        setHighestLinkScore(null);
         try {
           const payload = {
             input_text: mode === 'text' ? text : null,
@@ -1639,24 +1652,27 @@
         }
       };
 
-      const openSandboxPreview = async (targetUrl) => {
-        setSandboxClosing(false);
-        setSandboxPreview({ url: targetUrl, loading: true, result: null, error: null });
+      const openLinkAndAddScore = async (targetUrl) => {
+        // Open synchronously in this click handler so popup blockers allow it.
+        // Installed Factora extensions scan the newly opened page automatically.
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        setLinkScoreResult({ url: targetUrl, loading: true, error: null });
         try {
-          const response = await fetch(`${API_BASE}/analyzer/isolated-preview/${encodeURIComponent(threat.incident_id)}`, {
+          const response = await fetch(`${API_BASE}/analyzer/analyze`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url: targetUrl })
+            body: JSON.stringify({ target_url: targetUrl })
           });
           const result = await response.json();
-          if (!response.ok) throw new Error(result.detail || `Preview failed (${response.status})`);
-          setSandboxPreview(current => current ? { ...current, loading: false, result } : current);
+          if (!response.ok) throw new Error(result.detail || `Link scan failed (${response.status})`);
+          setLinkScoreResult({ url: targetUrl, loading: false, score: result.fuzzy_risk_score, tier: result.risk_tier, error: null });
+          setHighestLinkScore(current => !current || result.fuzzy_risk_score > current.score
+            ? { url: targetUrl, score: result.fuzzy_risk_score, tier: result.risk_tier }
+            : current);
         } catch (error) {
-          setSandboxPreview(current => current ? { ...current, loading: false, error: error.message } : current);
+          setLinkScoreResult({ url: targetUrl, loading: false, error: error.message });
         }
       };
-
-      const closeSandboxPreview = () => setSandboxClosing(true);
 
       const loadDemo = (type) => {
         if (type === 'tcs') {
@@ -1686,7 +1702,6 @@
                   <div className="flex flex-col min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="font-extrabold text-base tracking-tight text-gray-900 dark:text-white">Factora</span>
-                      <span className="text-[9px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-tactile-ember/15 text-tactile-ember dark:bg-tactile-ember/25">PRO</span>
                     </div>
                     <span className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 truncate">Autonomous Defense</span>
                   </div>
@@ -1720,19 +1735,6 @@
                         </span>
                       </button>
 
-                      <button
-                        onClick={() => setView('network')}
-                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-2xl transition-all text-xs font-bold ${
-                          view === 'network'
-                            ? 'bg-tactile-obsidian text-white dark:bg-white/10 dark:text-white dark:ring-1 dark:ring-white/10 shadow-sm'
-                            : 'text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.06]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <Icons.TopoGraph />
-                          <span>3D Threat Terrain</span>
-                        </div>
-                      </button>
                     </div>
                   </div>
 
@@ -1864,9 +1866,9 @@
                 <section className="bg-tactile-card dark:bg-tactile-darkcard rounded-2xl p-5 md:p-6 border border-black/[0.06] dark:border-white/[0.07] shadow-tactile-card dark:shadow-tactile-darkcard">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-5">
                     <div className="max-w-xl">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">Start with a check</p>
-                      <h1 className="mt-2 text-xl md:text-2xl font-bold tracking-tight">Verify before you respond.</h1>
-                      <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">Paste a message, check a link, or review an assessment repository. Factora will show the signals it finds and what to verify next.</p>
+                      <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-gray-500 dark:text-gray-400">{view === 'community' ? 'Community threat overview' : 'Start with a check'}</p>
+                      <h1 className="mt-2 text-xl md:text-2xl font-bold tracking-tight">{view === 'community' ? 'The last 30 days of community threat reports.' : 'Verify before you respond.'}</h1>
+                      <p className="mt-2 text-sm leading-relaxed text-gray-600 dark:text-gray-400">{view === 'community' ? 'Recent reports, reported losses, and related threat indicators in one place.' : 'Paste a message, check a link, or review an assessment repository. Factora will show the signals it finds and what to verify next.'}</p>
                     </div>
                     <div className="flex flex-wrap gap-2 text-xs">
                       <span title={modelStatus.analyzerError || ''} className={`px-3 py-2 rounded-xl border ${modelStatus.analyzer ? 'border-emerald-600/20 bg-emerald-600/5 text-emerald-700 dark:text-emerald-300' : 'border-amber-600/20 bg-amber-600/5 text-amber-700 dark:text-amber-300'}`}>Analyzer {modelStatus.checked ? (modelStatus.analyzer ? 'ready' : 'unavailable') : 'checking'}</span>
@@ -1987,8 +1989,8 @@
                         {/* Column 1: Carved Tactile Speedometer Gauge + Stacked Profile Deck */}
                         <div className="space-y-6">
                           <CarvedTactileGauge
-                            score={threat.fuzzy_risk_score}
-                            tier={threat.risk_tier}
+                            score={Math.max(threat.fuzzy_risk_score || 0, highestLinkScore?.score || 0)}
+                            tier={(highestLinkScore?.score || 0) > (threat.fuzzy_risk_score || 0) ? highestLinkScore.tier : threat.risk_tier}
                           />
 
                           {/* Stacked Card Deck (Image 3 Style) */}
@@ -2069,14 +2071,17 @@
 
                             {analysisIsLive && (threat.extracted_indicators?.urls || []).length > 0 && (
                               <div className="mt-4 pt-4 border-t border-black/[0.06] dark:border-white/5 space-y-2">
-                                <div className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Links found · remote isolated preview</div>
+                                <div className="text-[11px] font-bold text-gray-700 dark:text-gray-300">Links found</div>
+                                <p className="text-[10px] leading-relaxed text-gray-500">Opens the link in a new tab. If the Factora extension is installed, it scans the page there. Factora also scans the URL and adds the higher risk score here. Only open links you are comfortable visiting.</p>
                                 {(threat.extracted_indicators.urls).map((targetUrl, index) => (
                                   <div key={`${targetUrl}-${index}`} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl bg-black/[0.025] dark:bg-white/[0.035] px-3 py-2">
                                     <span className="min-w-0 truncate text-[11px] font-mono text-gray-600 dark:text-gray-300" title={targetUrl}>{targetUrl}</span>
-                                    <button type="button" onClick={() => openSandboxPreview(targetUrl)} className="shrink-0 px-3 py-2 rounded-xl bg-tactile-obsidian text-white dark:bg-white/10 dark:text-white text-[11px] font-bold hover:opacity-90 transition">Preview safely ↗</button>
+                                    <button type="button" onClick={() => openLinkAndAddScore(targetUrl)} className="shrink-0 px-3 py-2 rounded-xl bg-tactile-obsidian text-white dark:bg-white/10 dark:text-white text-[11px] font-bold hover:opacity-90 transition">Open site & add link score ↗</button>
                                   </div>
                                 ))}
-                                <p className="text-[10px] leading-relaxed text-gray-500">The page is rendered in a remote disposable browser and shown here as an image. It is never opened in this device’s browser. A preview is not a safety verdict.</p>
+                                {linkScoreResult?.loading && <p className="text-[11px] text-gray-500">Scanning {linkScoreResult.url}…</p>}
+                                {linkScoreResult?.error && <p role="alert" className="text-[11px] text-red-600 dark:text-red-400">Link score could not be added: {linkScoreResult.error}</p>}
+                                {linkScoreResult?.score !== undefined && <p className="text-[11px] font-bold text-tactile-ember">Latest link score: {linkScoreResult.score}/100 · {linkScoreResult.tier}. Combined main score uses the higher message or link score: {Math.max(threat.fuzzy_risk_score || 0, highestLinkScore?.score || 0)}/100.</p>}
                               </div>
                             )}
                           </div>
@@ -2094,12 +2099,7 @@
                   </div>
                 )}
 
-                {/* VIEW 2: 3D Topographic Threat Terrain Graph */}
-                {view === 'network' && (
-                  <TopographicEmberGraph graphData={graph} />
-                )}
-
-                {/* VIEW 3: Community Victim Hub */}
+                {/* VIEW 2: Community Victim Hub */}
                 {view === 'community' && (
                   <CommunityVictimHub communityData={comm} externalPortals={portals} />
                 )}
@@ -2177,37 +2177,6 @@
               </footer>
 
             </div>
-
-            {sandboxPreview && (
-              <div className={`sandbox-backdrop fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 backdrop-blur-sm p-3 sm:p-6 ${sandboxClosing ? 'sandbox-closing' : ''}`} onClick={event => { if (event.target === event.currentTarget) closeSandboxPreview(); }} onAnimationEnd={event => { if (event.target === event.currentTarget && sandboxClosing) { setSandboxPreview(null); setSandboxClosing(false); } }}>
-                <section role="dialog" aria-modal="true" aria-label="Remote isolated link preview" className="sandbox-window w-full max-w-4xl max-h-[92vh] overflow-hidden rounded-3xl bg-tactile-card dark:bg-tactile-darkcard border border-black/[0.08] dark:border-white/10 shadow-2xl flex flex-col">
-                  <header className="flex items-start justify-between gap-4 px-5 py-4 border-b border-black/[0.06] dark:border-white/10">
-                    <div className="min-w-0">
-                      <h2 className="font-bold text-sm text-gray-900 dark:text-white">Remote isolated preview</h2>
-                      <p className="mt-1 truncate font-mono text-[10px] text-gray-500 dark:text-gray-400">{sandboxPreview.result?.final_url || sandboxPreview.url}</p>
-                    </div>
-                    <button type="button" aria-label="Close preview" onClick={closeSandboxPreview} className="shrink-0 rounded-xl px-3 py-1 text-2xl leading-none text-gray-500 hover:bg-black/5 dark:hover:bg-white/10">×</button>
-                  </header>
-                  <div className="overflow-auto p-4 sm:p-5">
-                    {sandboxPreview.loading && <div className="min-h-64 flex flex-col items-center justify-center gap-3 text-sm text-gray-500"><span className="w-8 h-8 rounded-full border-2 border-tactile-ember border-t-transparent animate-spin"></span>Opening the link in a remote disposable browser…</div>}
-                    {sandboxPreview.error && <div role="alert" className="rounded-2xl border border-amber-500/20 bg-amber-50 dark:bg-amber-950/20 p-4 text-sm text-amber-800 dark:text-amber-200">{sandboxPreview.error}</div>}
-                    {sandboxPreview.result && <>
-                      <div className={`mb-3 flex flex-wrap items-center gap-2 text-[10px] font-bold ${sandboxPreview.result.likely_blank ? 'text-amber-700 dark:text-amber-300' : 'text-emerald-700 dark:text-emerald-300'}`}><span className={`w-2 h-2 rounded-full ${sandboxPreview.result.likely_blank ? 'bg-amber-500' : 'bg-emerald-500'}`}></span> {sandboxPreview.result.likely_blank ? 'Page appears blank or blocked' : 'Screenshot captured'}{sandboxPreview.result.page_status ? ` · page returned ${sandboxPreview.result.page_status}` : ''}{sandboxPreview.result.failed_resources && Number(sandboxPreview.result.failed_resources) > 0 ? ` · ${sandboxPreview.result.failed_resources} page resources failed` : ''}</div>
-                      {sandboxPreview.result.likely_blank ? (
-                        <div className="rounded-2xl border border-amber-500/20 bg-amber-50 dark:bg-amber-950/20 p-5 text-sm text-amber-800 dark:text-amber-200">{sandboxPreview.result.notice}<div><button type="button" onClick={() => openSandboxPreview(sandboxPreview.url)} className="mt-3 font-bold underline">Try capture again</button></div></div>
-                      ) : !sandboxPreview.imageFailed ? (
-                        <img src={sandboxPreview.result.image_data_url} alt="Website screenshot captured in a remote disposable browser" onError={() => setSandboxPreview(current => current ? { ...current, imageFailed: true } : current)} className="block min-h-48 max-h-[58vh] w-full rounded-xl border border-black/10 dark:border-white/10 bg-white object-contain" />
-                      ) : (
-                        <div role="alert" className="rounded-2xl border border-amber-500/20 bg-amber-50 dark:bg-amber-950/20 p-5 text-sm text-amber-800 dark:text-amber-200">The browser service captured a response, but Factora could not display its image. The site may have blocked remote rendering. <button type="button" onClick={() => openSandboxPreview(sandboxPreview.url)} className="ml-1 font-bold underline">Try again</button>.</div>
-                      )}
-                      {sandboxPreview.result.failed_stylesheets && Number(sandboxPreview.result.failed_stylesheets) > 0 && <p className="mt-2 text-[10px] text-amber-700 dark:text-amber-300">Some page styles did not load in the remote preview.</p>}
-                      <p className="mt-3 text-[10px] leading-relaxed text-gray-500 dark:text-gray-400">{sandboxPreview.result.notice}</p>
-                    </>}
-                  </div>
-                  <footer className="flex justify-end px-5 py-3 border-t border-black/[0.06] dark:border-white/10"><button type="button" onClick={closeSandboxPreview} className="px-4 py-2 rounded-xl bg-tactile-obsidian text-white dark:bg-white/10 text-xs font-bold">Close preview</button></footer>
-                </section>
-              </div>
-            )}
 
             {/* Mobile Bottom Navigation Bar (md:hidden) */}
             <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-tactile-card/95 dark:bg-tactile-darkcard/95 backdrop-blur-md border-t border-black/[0.08] dark:border-white/10 px-3 py-2 flex items-center justify-around shadow-keycap">
